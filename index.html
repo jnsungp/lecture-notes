@@ -547,7 +547,7 @@ footer.site .legal { color: var(--ink-muted-48); }
     <div class="cards-2">
       <div class="card">
         <p class="tagline">강의자료 PDF</p>
-        <p class="caption" style="margin:0 0 var(--md)">슬라이드가 담긴 PDF 한 개. 그림 그대로 왼쪽에 들어갑니다.</p>
+        <p class="caption" style="margin:0 0 var(--md)">슬라이드가 담긴 PDF 한 개. 모든 장이 그림 그대로 왼쪽에 들어갑니다.</p>
         <div class="drop" id="dropDeck">
           <span class="big">PDF 한 개 고르기</span>
           <span class="caption">여기로 끌어다 놓아도 됩니다</span>
@@ -603,6 +603,13 @@ footer.site .legal { color: var(--ink-muted-48); }
             <option value="2" selected>2장</option>
             <option value="3">3장</option>
             <option value="4">4장</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="layoutMode">필기 배치</label>
+          <select id="layoutMode">
+            <option value="aligned" selected>슬라이드마다 옆에 나란히</option>
+            <option value="flow">오른쪽 칸에 이어서 흘리기</option>
           </select>
         </div>
         <div class="field">
@@ -676,7 +683,7 @@ footer.site .legal { color: var(--ink-muted-48); }
           <label class="check"><input type="checkbox" id="showSource"> 전사본 파일 이름 표시</label>
           <label class="check"><input type="checkbox" id="allowJang"> <code>3장</code> 형식도 페이지 표시로 인식</label>
           <label class="check"><input type="checkbox" id="allowBare"> 숫자만 있는 줄도 페이지 표시로 인식</label>
-          <label class="check"><input type="checkbox" id="keepEmpty"> 필기가 없는 슬라이드도 넣기</label>
+          <label class="check"><input type="checkbox" id="skipEmpty"> 필기가 없는 슬라이드는 빼기</label>
         </div>
         <div style="margin-top:var(--lg)">
           <button class="btn btn-pearl" id="btnReset">기본값으로 되돌리기</button>
@@ -986,9 +993,67 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     return out;
   }
 
+  /* getTextContent 는 줄 맨 끝의 공백을 버린다. 그런데 그 공백이야말로
+     "원본이 낱말 경계에서 줄을 바꿨는가"를 알려주는 정답이다.
+     연산자 목록에는 글리프가 공백까지 그대로 남아 있으므로 거기서 가져온다. */
+  async function pageGlyphText(page) {
+    var OPS = global.pdfjsLib && global.pdfjsLib.OPS;
+    if (!OPS || OPS.showText === undefined) return null;
+    var ops;
+    try { ops = await page.getOperatorList(); }
+    catch (e) { return null; }
+    var out = [];
+    for (var i = 0; i < ops.fnArray.length; i++) {
+      if (ops.fnArray[i] !== OPS.showText) continue;
+      var glyphs = ops.argsArray[i][0];
+      if (!glyphs || !glyphs.length) continue;
+      for (var g = 0; g < glyphs.length; g++) {
+        var gl = glyphs[g];
+        if (gl && typeof gl === 'object' && typeof gl.unicode === 'string') out.push(gl.unicode);
+      }
+    }
+    return out.join('');
+  }
+
+  /* 공백을 뺀 글자열과, "각 글자 뒤에 공백이 있었는지" 표를 만든다. */
+  function denseWithFollow(raw) {
+    var dense = [], follow = [];
+    for (var i = 0; i < raw.length; i++) {
+      var c = raw.charAt(i);
+      if (/\s/.test(c)) {
+        if (follow.length) follow[follow.length - 1] = true;
+        continue;
+      }
+      dense.push(c);
+      follow.push(false);
+    }
+    return { dense: dense.join(''), follow: follow };
+  }
+
+  /* 연산자 목록에서 얻은 정답을 줄에 붙인다. 글자열이 어긋나면 손대지 않는다. */
+  function applyExactSpaces(pageLines, raw) {
+    if (!raw) return false;
+    var info = denseWithFollow(raw);
+    var joined = '';
+    for (var i = 0; i < pageLines.length; i++) {
+      joined += pageLines[i].text.replace(/\s/g, '');
+    }
+    if (!joined || joined !== info.dense) return false;
+    var at = 0;
+    for (var k = 0; k < pageLines.length; k++) {
+      var len = pageLines[k].text.replace(/\s/g, '').length;
+      if (!len) continue;
+      at += len;
+      pageLines[k].trailSpace = !!info.follow[at - 1];
+      pageLines[k].exactSpace = true;
+    }
+    return true;
+  }
+
   async function extractDoc(pdf, onProgress) {
     var lines = [];
     var pageHeights = [];
+    var exactPages = 0;
     for (var p = 1; p <= pdf.numPages; p++) {
       var page = await pdf.getPage(p);
       var vp = page.getViewport({ scale: 1 });
@@ -1003,6 +1068,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
         items.push({ str: it.str, x: tr[4], y: tr[5], w: it.width || 0, h: h });
       }
       var pageLines = itemsToLines(items, p - 1);
+      if (applyExactSpaces(pageLines, await pageGlyphText(page))) exactPages++;
       for (var q = 0; q < pageLines.length; q++) {
         pageLines[q].pageHeight = vp.height;
         lines.push(pageLines[q]);
@@ -1012,7 +1078,13 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     }
     var chars = 0;
     for (var z = 0; z < lines.length; z++) chars += lines[z].text.length;
-    return { lines: lines, pageCount: pdf.numPages, pageHeights: pageHeights, charCount: chars };
+    return {
+      lines: lines,
+      pageCount: pdf.numPages,
+      pageHeights: pageHeights,
+      charCount: chars,
+      exactPages: exactPages
+    };
   }
 
   /* ------------------------------------------------------------------ *
@@ -1187,15 +1259,16 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
         if (g > 0.5) gaps.push(g);
       }
     }
-    var trailing = 0;
+    var exact = 0;
     for (var tw = 0; tw < doc.lines.length; tw++) {
-      if (doc.lines[tw].trailSpace) trailing++;
+      if (doc.lines[tw].exactSpace) exact++;
     }
     var ctx = {
       rightEdge: percentile(rights, 0.92) || 500,
       charW: median(heights) || 10,
       medGap: median(gaps) || 0,
-      keepsTrailSpace: doc.lines.length >= 10 && trailing > doc.lines.length * 0.5,
+      // 연산자 목록에서 줄 끝 공백을 정확히 읽어냈다면 자리 추정은 쓰지 않는다
+      keepsTrailSpace: doc.lines.length > 0 && exact >= doc.lines.length * 0.9,
       joinMode: opts.joinMode
     };
 
@@ -1298,7 +1371,14 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
 <script>
 /* layout.js */
 /* layout.js — 슬라이드 이미지와 필기 텍스트를 A4에 조판해 PDF를 만든다.
-   브라우저 전역 window.NoteLayout 로 노출. */
+   브라우저 전역 window.NoteLayout 로 노출.
+
+   배치 방식은 두 가지다.
+     aligned  각 슬라이드 바로 옆에 그 슬라이드의 필기를 놓는다 (기본).
+              필기가 없으면 그 자리는 빈칸으로 둔다. 넘치면 같은 슬라이드를
+              다시 놓고 "(이어서)" 로 이어 쓴다.
+     flow     오른쪽 칸 전체를 하나로 보고 필기를 이어서 흘려 넣는다.
+              빈 자리가 없어 촘촘하지만 슬라이드와 줄이 맞지는 않는다. */
 (function (global) {
   'use strict';
 
@@ -1308,7 +1388,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
   var NO_START = '。、，．,.!?！？:;)]}〉》」』】>”’%‰°℃…·';
   var NO_END = '([{〈《「『【<“‘';
 
-  var INK = null, MUTED = null, ACCENT = null, LINE = null;
+  var INK, MUTED, ACCENT, LINE, RULE;
 
   function mm(v) { return v * MM; }
 
@@ -1428,45 +1508,46 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
   }
 
   /* ------------------------------------------------------------------ *
-   * 본문 → 조판 단위(atom)
+   * 한 슬라이드의 필기 → 조판 단위(atom)
    * ------------------------------------------------------------------ */
-  function buildAtoms(cfg, slides, bySlide, widthOf, textW) {
+  function bodyAtoms(cfg, slideNo, bySlide, widthOf, textW) {
     var size = cfg.fontSize;
     var lineH = size * cfg.lineSpacing;
-    var headSize = size + 0.5;
-    var headH = headSize * cfg.lineSpacing + lineH * 0.25;
     var atoms = [];
+    var entries = bySlide.get(slideNo) || [];
 
-    slides.forEach(function (slideNo, si) {
-      if (cfg.showHeader) {
-        atoms.push({
-          kind: 'header', text: 'p.' + slideNo,
-          size: headSize, h: si === 0 ? headH - lineH * 0.25 : headH + lineH * 0.35,
-          pad: si === 0 ? 0 : lineH * 0.35
-        });
+    entries.forEach(function (entry, ei) {
+      if (cfg.showSource) {
+        atoms.push({ kind: 'source', text: '— ' + entry.file, size: size - 1, h: lineH });
       }
-      var entries = bySlide.get(slideNo) || [];
-      if (!entries.length) {
-        atoms.push({ kind: 'muted', text: '(필기 없음)', size: size, h: lineH });
-        return;
-      }
-      entries.forEach(function (entry, ei) {
-        if (cfg.showSource) {
-          atoms.push({ kind: 'source', text: '— ' + entry.file, size: size - 1, h: lineH });
-        }
-        entry.paragraphs.forEach(function (para, pi) {
-          var lines = wrapText(sanitize(para), textW, size, widthOf);
-          lines.forEach(function (ln) {
-            atoms.push({ kind: 'line', text: ln, size: size, h: lineH });
-          });
-          var last = (ei === entries.length - 1) && (pi === entry.paragraphs.length - 1);
-          if (!last && cfg.paraGap > 0) {
-            atoms.push({ kind: 'gap', h: lineH * cfg.paraGap });
-          }
+      entry.paragraphs.forEach(function (para, pi) {
+        wrapText(sanitize(para), textW, size, widthOf).forEach(function (ln) {
+          atoms.push({ kind: 'line', text: ln, size: size, h: lineH });
         });
+        var last = (ei === entries.length - 1) && (pi === entry.paragraphs.length - 1);
+        if (!last && cfg.paraGap > 0) atoms.push({ kind: 'gap', h: lineH * cfg.paraGap });
       });
     });
     return atoms;
+  }
+
+  /* atom 들을 주어진 높이에 맞게 잘라 여러 덩어리로 나눈다. */
+  function packInto(atoms, height) {
+    var chunks = [];
+    var cur = [], used = 0;
+    for (var i = 0; i < atoms.length; i++) {
+      var a = atoms[i];
+      if (a.kind === 'gap' && !cur.length) continue;      // 덩어리 머리의 빈 줄은 버린다
+      if (used + a.h > height && cur.length) {
+        chunks.push(cur);
+        cur = []; used = 0;
+        if (a.kind === 'gap') continue;
+      }
+      cur.push(a);
+      used += a.h;
+    }
+    if (cur.length) chunks.push(cur);
+    return chunks;
   }
 
   /* ------------------------------------------------------------------ *
@@ -1482,6 +1563,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     MUTED = rgb(0.50, 0.53, 0.58);
     ACCENT = rgb(0.14, 0.36, 0.79);
     LINE = rgb(0.80, 0.83, 0.87);
+    RULE = rgb(0.85, 0.89, 0.96);
 
     var doc = await PDFLib.PDFDocument.create();
     doc.registerFontkit(global.fontkit);
@@ -1493,7 +1575,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     doc.setCreator('강의노트 합치기');
     doc.setProducer('강의노트 합치기');
 
-    /* --- 용지 및 칸 계산 --- */
+    /* --- 용지와 칸 --- */
     var landscape = cfg.orient !== 'portrait';
     var W = landscape ? A4.long : A4.short;
     var H = landscape ? A4.short : A4.long;
@@ -1502,7 +1584,6 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     var slideGap = mm(cfg.slideGapMm);
 
     var contentW = W - m * 2;
-    var contentH = H - m * 2;
     var footH = cfg.showPageNo ? cfg.fontSize + 6 : 0;
     var bodyTop = H - m;
     var bodyBottom = m + footH;
@@ -1518,23 +1599,28 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
 
     var size = cfg.fontSize;
     var lineH = size * cfg.lineSpacing;
-
-    /* --- 슬라이드 묶음 --- */
-    var groups = [];
-    for (var i = 0; i < cfg.slides.length; i += perPage) {
-      groups.push(cfg.slides.slice(i, i + perPage));
-    }
-    if (!groups.length) throw new Error('출력할 슬라이드가 없습니다.');
+    var headSize = size + 0.5;
+    var headH = cfg.showHeader ? headSize * cfg.lineSpacing + lineH * 0.35 : 0;
+    var labelH = size * 1.05;                 // 슬라이드 아래 번호가 차지하는 높이
 
     var imgCache = new Map();
-    var pageCount = 0;
     var pages = [];
 
-    function drawFrame(group, contPart) {
+    async function ensureImage(no) {
+      if (imgCache.has(no)) return imgCache.get(no);
+      var info = null;
+      if (no >= 1 && no <= cfg.deckPdf.numPages) {
+        var r = await renderSlide(cfg.deckPdf, no, leftW, cfg.dpi, cfg.imgFormat);
+        var img = r.isPng ? await doc.embedPng(r.dataUrl) : await doc.embedJpg(r.dataUrl);
+        info = { image: img, aspect: r.aspect };
+      }
+      imgCache.set(no, info);
+      return info;
+    }
+
+    function newPage() {
       var page = doc.addPage([W, H]);
       pages.push(page);
-      pageCount++;
-
       if (cfg.divider) {
         page.drawLine({
           start: { x: rightX - colGap / 2, y: bodyBottom },
@@ -1542,41 +1628,33 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
           thickness: 0.5, color: LINE
         });
       }
+      return page;
+    }
 
-      for (var k = 0; k < group.length; k++) {
-        var info = imgCache.get(group[k]);
-        var slotTop = bodyTop - k * (slotH + slideGap);
-        if (!info || !info.image) continue;
-        var aspect = info.aspect || 4 / 3;
-        var w = leftW, h = w / aspect;
-        if (h > slotH) { h = slotH; w = h * aspect; }
-        var x = leftX + (leftW - w) / 2;
-        var y = slotTop - (slotH + h) / 2;
+    /* 슬롯 k 자리에 슬라이드 그림과 번호를 그리고, 그 슬롯의 윗변을 돌려준다. */
+    function drawSlide(page, k, slideNo) {
+      var slotTop = bodyTop - k * (slotH + slideGap);
+      var info = imgCache.get(slideNo);
+      var boxH = slotH - labelH;
+      var aspect = (info && info.aspect) || 4 / 3;
+      var w = leftW, h = w / aspect;
+      if (h > boxH) { h = boxH; w = h * aspect; }
+      var x = leftX + (leftW - w) / 2;
+      var y = slotTop - (boxH - h) / 2 - h;
+
+      if (info) {
         page.drawImage(info.image, { x: x, y: y, width: w, height: h });
         if (cfg.slideBorder) {
           page.drawRectangle({
-            x: x, y: y, width: w, height: h,
-            borderColor: LINE, borderWidth: 0.6
-          });
-        }
-        // 오른쪽 칸에 "p.3" 머리표가 있으면 왼쪽 번호는 군더더기다
-        if (!cfg.showHeader) {
-          var labelY = y - size * 0.95;
-          if (labelY < bodyBottom + 1) labelY = y + h + size * 0.25;
-          page.drawText(sanitize('p.' + group[k]), {
-            x: x + 1, y: labelY, size: size * 0.75, font: font, color: MUTED
+            x: x, y: y, width: w, height: h, borderColor: LINE, borderWidth: 0.6
           });
         }
       }
-
-      var top = bodyTop;
-      if (contPart > 0) {
-        page.drawText('(이어서)', {
-          x: rightX, y: top - size * 0.9, size: size - 0.5, font: font, color: MUTED
-        });
-        top -= lineH * 1.3;
-      }
-      return { page: page, top: top };
+      // 슬라이드 번호 — 그림 바로 아래 왼쪽
+      page.drawText(sanitize('p.' + slideNo), {
+        x: x, y: y - size * 0.95, size: size * 0.8, font: font, color: MUTED
+      });
+      return slotTop;
     }
 
     function drawAtom(page, atom, top) {
@@ -1585,7 +1663,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
       var lh = s === size ? lineH : s * cfg.lineSpacing;
       var baseline = top - (atom.pad || 0) - lh / 2 - s * 0.34;
       var color = atom.kind === 'header' ? ACCENT
-                : (atom.kind === 'source' || atom.kind === 'muted') ? MUTED : INK;
+                : (atom.kind === 'source') ? MUTED : INK;
       page.drawText(sanitize(atom.text), {
         x: rightX, y: baseline, size: s, font: font, color: color
       });
@@ -1593,73 +1671,109 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
         page.drawLine({
           start: { x: rightX, y: baseline - s * 0.42 },
           end: { x: rightX + rightW, y: baseline - s * 0.42 },
-          thickness: 0.4, color: rgb(0.85, 0.89, 0.96)
+          thickness: 0.4, color: RULE
         });
       }
     }
 
-    /* --- 그룹별 조판 --- */
-    for (var gi = 0; gi < groups.length; gi++) {
-      var group = groups[gi];
-
-      // 이 묶음에 필요한 슬라이드 이미지 준비
-      for (var s2 = 0; s2 < group.length; s2++) {
-        var no = group[s2];
-        if (imgCache.has(no)) continue;
-        if (no < 1 || no > cfg.deckPdf.numPages) { imgCache.set(no, null); continue; }
-        var rendered = await renderSlide(cfg.deckPdf, no, leftW, cfg.dpi, cfg.imgFormat);
-        var img = rendered.isPng
-          ? await doc.embedPng(rendered.dataUrl)
-          : await doc.embedJpg(rendered.dataUrl);
-        imgCache.set(no, { image: img, aspect: rendered.aspect });
-      }
-
-      var atoms = buildAtoms(cfg, group, cfg.bySlide, widthOf, rightW);
-
-      var part = 0;
-      var frame = drawFrame(group, part);
-      var y = frame.top;
-      var ai = 0;
-      var placedOnPage = 0;
-
-      while (ai < atoms.length) {
-        var atom = atoms[ai];
-        var need = atom.h;
-
-        // 문단 간격이 쪽 머리에 오면 버린다
-        if (atom.kind === 'gap' && placedOnPage === 0) { ai++; continue; }
-
-        // 제목만 남고 본문이 안 들어가면 다음 쪽으로 넘긴다
-        var widow = false;
-        if ((atom.kind === 'header' || atom.kind === 'source') && placedOnPage > 0) {
-          var next = atoms[ai + 1];
-          if (next && (y - need - next.h) < bodyBottom) widow = true;
-        }
-
-        if ((y - need < bodyBottom || widow) && placedOnPage > 0) {
-          part++;
-          frame = drawFrame(group, part);
-          y = frame.top;
-          placedOnPage = 0;
-          continue;
-        }
-
-        drawAtom(frame.page, atom, y);
-        y -= need;
-        placedOnPage++;
-        ai++;
-      }
-
-      report(gi + 1, groups.length);
-      if (gi % 2 === 1) await new Promise(function (r) { setTimeout(r, 0); });
+    function header(slideNo, cont) {
+      return {
+        kind: 'header',
+        text: 'p.' + slideNo + (cont ? ' (이어서)' : ''),
+        size: headSize,
+        h: headH
+      };
     }
+
+    /* ---------------------------------------------------------------- *
+     * 배치 1 — 슬라이드별로 나란히 (기본)
+     * ---------------------------------------------------------------- */
+    async function buildAligned() {
+      var rows = [];
+      for (var i = 0; i < cfg.slides.length; i++) {
+        var no = cfg.slides[i];
+        await ensureImage(no);
+        var atoms = bodyAtoms(cfg, no, cfg.bySlide, widthOf, rightW);
+        var chunks = packInto(atoms, slotH - headH);
+        if (!chunks.length) chunks = [[]];          // 필기 없는 슬라이드 → 빈칸
+        for (var c = 0; c < chunks.length; c++) {
+          rows.push({ slide: no, part: c, atoms: chunks[c] });
+        }
+        report(i + 1, cfg.slides.length);
+        if (i % 4 === 3) await new Promise(function (r) { setTimeout(r, 0); });
+      }
+
+      for (var r0 = 0; r0 < rows.length; r0 += perPage) {
+        var page = newPage();
+        for (var k = 0; k < perPage && r0 + k < rows.length; k++) {
+          var row = rows[r0 + k];
+          var y = drawSlide(page, k, row.slide);
+          if (cfg.showHeader) {
+            drawAtom(page, header(row.slide, row.part > 0), y);
+            y -= headH;
+          }
+          for (var a = 0; a < row.atoms.length; a++) {
+            drawAtom(page, row.atoms[a], y);
+            y -= row.atoms[a].h;
+          }
+        }
+      }
+    }
+
+    /* ---------------------------------------------------------------- *
+     * 배치 2 — 오른쪽 칸에 이어서 흘려 넣기
+     * ---------------------------------------------------------------- */
+    async function buildFlow() {
+      var groups = [];
+      for (var i = 0; i < cfg.slides.length; i += perPage) {
+        groups.push(cfg.slides.slice(i, i + perPage));
+      }
+
+      for (var gi = 0; gi < groups.length; gi++) {
+        var group = groups[gi];
+        for (var s2 = 0; s2 < group.length; s2++) await ensureImage(group[s2]);
+
+        var atoms = [];
+        group.forEach(function (no, si) {
+          if (cfg.showHeader) {
+            var hd = header(no, false);
+            hd.pad = si === 0 ? 0 : lineH * 0.35;
+            hd.h = headH + (si === 0 ? 0 : lineH * 0.35);
+            atoms.push(hd);
+          }
+          atoms = atoms.concat(bodyAtoms(cfg, no, cfg.bySlide, widthOf, rightW));
+        });
+
+        var chunks = packInto(atoms, bodyH);
+        if (!chunks.length) chunks = [[]];
+        for (var c = 0; c < chunks.length; c++) {
+          var page = newPage();
+          for (var k = 0; k < group.length; k++) drawSlide(page, k, group[k]);
+          var y = bodyTop;
+          if (c > 0) {
+            drawAtom(page, { kind: 'source', text: '(이어서)', size: size - 0.5, h: lineH }, y);
+            y -= lineH * 1.3;
+          }
+          for (var a = 0; a < chunks[c].length; a++) {
+            drawAtom(page, chunks[c][a], y);
+            y -= chunks[c][a].h;
+          }
+        }
+        report(gi + 1, groups.length);
+        if (gi % 2 === 1) await new Promise(function (r) { setTimeout(r, 0); });
+      }
+    }
+
+    if (!cfg.slides.length) throw new Error('출력할 슬라이드가 없습니다.');
+    if (cfg.layoutMode === 'flow') await buildFlow();
+    else await buildAligned();
 
     /* --- 쪽번호 --- */
     if (cfg.showPageNo) {
-      for (var pi2 = 0; pi2 < pages.length; pi2++) {
-        var label = (pi2 + 1) + ' / ' + pages.length;
+      for (var pi = 0; pi < pages.length; pi++) {
+        var label = (pi + 1) + ' / ' + pages.length;
         var tw = font.widthOfTextAtSize(label, size * 0.8);
-        pages[pi2].drawText(label, {
+        pages[pi].drawText(label, {
           x: (W - tw) / 2, y: m * 0.55 + 2, size: size * 0.8, font: font, color: MUTED
         });
       }
@@ -1749,17 +1863,18 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     fontSize: 9, lineSpacing: 1.45, paraGap: 0.5, margin: 10,
     slidesPer: 2, quality: 150, orient: 'landscape', splitRatio: 50,
     colGap: 5, slideGap: 5, offset: 0, joinMode: 'auto', imgFormat: 'jpeg',
+    layoutMode: 'aligned',
     fileName: '강의노트.pdf',
     showHeader: true, showPageNo: true, slideBorder: true, divider: false,
-    showSource: false, allowJang: false, allowBare: false, keepEmpty: false
+    showSource: false, allowJang: false, allowBare: false, skipEmpty: false
   };
 
   var NUMERIC = ['fontSize', 'lineSpacing', 'paraGap', 'margin', 'slidesPer',
                  'quality', 'splitRatio', 'colGap', 'slideGap', 'offset'];
-  var TEXTY = ['orient', 'joinMode', 'imgFormat', 'fileName'];
+  var TEXTY = ['orient', 'joinMode', 'imgFormat', 'fileName', 'layoutMode'];
   var FLAGS = ['showHeader', 'showPageNo', 'slideBorder', 'divider',
-               'showSource', 'allowJang', 'allowBare', 'keepEmpty'];
-  var REPARSE = ['joinMode', 'allowJang', 'allowBare', 'offset', 'keepEmpty'];
+               'showSource', 'allowJang', 'allowBare', 'skipEmpty'];
+  var REPARSE = ['joinMode', 'allowJang', 'allowBare', 'offset', 'skipEmpty'];
 
   function readSettings() {
     var s = {};
@@ -1946,16 +2061,16 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
                              .map(function (n) { return n.result; });
     state.merged = window.NoteParse.mergeAnalyses(results, s.offset);
 
-    var slides;
-    if (s.keepEmpty && state.deck) {
-      slides = [];
+    // 기본은 강의자료의 모든 장. 필기가 없는 장은 오른쪽이 빈칸으로 나간다.
+    var slides = [];
+    if (state.deck && !s.skipEmpty) {
       for (var i = 1; i <= state.deck.pdf.numPages; i++) slides.push(i);
     } else {
       slides = Array.from(state.merged.keys()).filter(function (n) { return n >= 1; });
-    }
-    slides.sort(function (a, b) { return a - b; });
-    if (state.deck) {
-      slides = slides.filter(function (n) { return n <= state.deck.pdf.numPages; });
+      slides.sort(function (a, b) { return a - b; });
+      if (state.deck) {
+        slides = slides.filter(function (n) { return n <= state.deck.pdf.numPages; });
+      }
     }
     state.slides = slides;
 
@@ -1978,24 +2093,39 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     // 한글·영문이 섞인 실제 전사본에서 글자당 평균 폭은 글자 크기의 0.9배쯤 된다
     var perLine = Math.max(8, Math.floor(rightW / (s.fontSize * 0.90)));
 
-    var pages = 0;
-    for (var i = 0; i < state.slides.length; i += s.slidesPer) {
-      var group = state.slides.slice(i, i + s.slidesPer);
+    function linesFor(no) {
       var lines = 0;
-      group.forEach(function (no) {
-        if (s.showHeader) lines += 1.6;
-        var entries = (state.merged && state.merged.get(no)) || [];
-        if (!entries.length) lines += 1;
-        entries.forEach(function (e) {
-          if (s.showSource) lines += 1;
-          e.paragraphs.forEach(function (p) {
-            lines += Math.ceil(p.length / perLine) + s.paraGap;
-          });
+      var entries = (state.merged && state.merged.get(no)) || [];
+      entries.forEach(function (e) {
+        if (s.showSource) lines += 1;
+        e.paragraphs.forEach(function (p) {
+          lines += Math.ceil(p.length / perLine) + s.paraGap;
         });
       });
-      pages += Math.max(1, Math.ceil(lines / linesPerPage));
+      return lines;
     }
-    return pages;
+
+    var headLines = s.showHeader ? 1.6 : 0;
+
+    if (s.layoutMode === 'flow') {
+      var pages = 0;
+      for (var i = 0; i < state.slides.length; i += s.slidesPer) {
+        var lines = 0;
+        state.slides.slice(i, i + s.slidesPer).forEach(function (no) {
+          lines += headLines + linesFor(no);
+        });
+        pages += Math.max(1, Math.ceil(lines / linesPerPage));
+      }
+      return pages;
+    }
+
+    // 나란히 배치 — 슬라이드마다 제 칸을 쓰고, 넘치면 그 슬라이드가 한 칸 더 쓴다
+    var perSlot = Math.max(1, Math.floor(linesPerPage / s.slidesPer) - headLines);
+    var rows = 0;
+    state.slides.forEach(function (no) {
+      rows += Math.max(1, Math.ceil(linesFor(no) / perSlot));
+    });
+    return Math.ceil(rows / s.slidesPer);
   }
 
   function updateSummary() {
@@ -2242,6 +2372,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
         showPageNo: s.showPageNo,
         slideBorder: s.slideBorder,
         divider: s.divider,
+        layoutMode: s.layoutMode,
         dpi: s.quality,
         imgFormat: s.imgFormat
       }, {
