@@ -1182,6 +1182,8 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
    *   "- 18 페이지 -"                 장식 포함
    *   "Page 3 ( ~5:34)"              뒤에 강의 시간이 붙는 형태
    *   "(대장질환 병리 족첵본 77p.)"    괄호로 감싼 짧은 안내 줄
+   *   "87-88p" "87p~88p."            여러 장을 묶은 표시 — 앞 장에 넣는다
+   *   "48.p"                         숫자와 단위 사이에 점
    * ------------------------------------------------------------------ */
   var LEAD = '[\\(\\[\\{\\-\\u2010-\\u2015·•*#>\\s]*';
   // 마커 뒤에 남아도 되는 것: 괄호, 물결, 콜론, 숫자(시간 표기) 등 — 글자는 안 됨
@@ -1193,13 +1195,15 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     var unitWord = 'pages?|pg|p|slide|슬라이드|페이지|쪽';
     var unitNum = 'pages?|pg|p\\.|p|페이지|쪽|슬라이드' + jang;
     var unitBracket = 'p\\.|pages?|pg|페이지|쪽' + jang;
-    // "41-42p." 처럼 두 장을 묶은 표시는 앞 장 번호로 본다
-    var range = '(?:\\s*[-~\\u2010-\\u2015]\\s*\\d{1,4})?';
+    // "41-42p." · "87p-88p" 처럼 여러 장을 묶은 표시는 앞 장 번호로 본다
+    var range = '(?:\\s*(?:p\\.?|페이지|쪽)?\\s*[-~\\u2010-\\u2015]\\s*\\d{1,4})?';
+    // "48.p" 처럼 숫자와 단위 사이에 점이 있어도 된다 ("3. 세포막" 같은 목록은 단위가 없어 걸리지 않는다)
+    var dot = '\\s*\\.?\\s*';
     return {
       wordFirst: new RegExp('^' + LEAD + '(' + unitWord + ')\\s*[.:#\\-]?\\s*(\\d{1,4})' + TAIL + '$', 'i'),
-      numFirst: new RegExp('^' + LEAD + '(\\d{1,4})' + range + '\\s*(' + unitNum + ')' + TAIL + '$', 'i'),
+      numFirst: new RegExp('^' + LEAD + '(\\d{1,4})' + range + dot + '(' + unitNum + ')' + TAIL + '$', 'i'),
       bracketed: /^[\(\[][^\(\)\[\]]*[\)\]]$/,
-      inBracket: new RegExp('(\\d{1,4})\\s*(' + unitBracket + ')', 'gi'),
+      inBracket: new RegExp('(\\d{1,4})' + range + dot + '(' + unitBracket + ')', 'gi'),
       bare: opts.allowBare
         ? new RegExp('^' + LEAD + '(\\d{1,4})[\\s\\-\\u2010-\\u2015·.\\)\\]]*$')
         : null
