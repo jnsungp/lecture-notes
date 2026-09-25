@@ -648,9 +648,10 @@ footer.site .legal { color: var(--ink-muted-48); }
         <div class="field">
           <label for="quality">슬라이드 화질</label>
           <select id="quality">
-            <option value="110">보통 — 파일이 작습니다</option>
-            <option value="150" selected>좋음</option>
-            <option value="220">아주 좋음 — 파일이 큽니다</option>
+            <option value="vector" selected>원본 그대로 — 확대해도 선명, 글자 선택 가능</option>
+            <option value="220">그림으로 · 아주 좋음</option>
+            <option value="150">그림으로 · 좋음</option>
+            <option value="110">그림으로 · 보통 — 파일이 작습니다</option>
           </select>
         </div>
       </div>
@@ -701,7 +702,7 @@ footer.site .legal { color: var(--ink-muted-48); }
             </select>
           </div>
           <div class="field">
-            <label for="imgFormat">슬라이드 이미지 형식</label>
+            <label for="imgFormat">슬라이드 그림 형식 (그림으로 넣을 때)</label>
             <select id="imgFormat">
               <option value="jpeg" selected>JPEG</option>
               <option value="png">PNG — 무손실, 파일 큼</option>
@@ -767,8 +768,8 @@ footer.site .legal { color: var(--ink-muted-48); }
       </div>
       <div class="card">
         <p class="tagline">2. 슬라이드를 그립니다</p>
-        <p class="caption">강의자료의 각 장을 그림으로 그려 왼쪽 칸에 넣습니다. 원본 그대로라
-        글꼴이나 그림이 바뀌지 않습니다.</p>
+        <p class="caption">강의자료의 각 장을 원본 페이지 그대로 왼쪽 칸에 옮겨 넣습니다.
+        그림으로 바꾸지 않아 확대해도 선명하고, 슬라이드 글자도 선택·검색됩니다.</p>
       </div>
       <div class="card">
         <p class="tagline">3. 새로 조판합니다</p>
@@ -2816,16 +2817,76 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     var imgCache = new Map();
     var pages = [];
 
+    /* 원본 그대로 — 강의자료 PDF의 페이지를 그림으로 바꾸지 않고 통째로 옮겨 넣는다.
+       확대해도 선명하고 슬라이드 글자도 선택·검색된다. 원본을 못 읽으면 그림으로 물러선다. */
+    var srcDoc = null;
+    var vector = cfg.dpi === 'vector' && !!cfg.deckBytes;
+    if (vector) {
+      try {
+        srcDoc = await PDFLib.PDFDocument.load(cfg.deckBytes, { ignoreEncryption: true, updateMetadata: false });
+      } catch (e) {
+        console.warn('강의자료를 원본 그대로 넣지 못해 그림으로 넣습니다:', e);
+        vector = false;
+      }
+    }
+    var rasterDpi = typeof cfg.dpi === 'number' ? cfg.dpi : 220;
+
+    /* 필요한 장을 한 번에 가져온다. 따로따로 가져오면 여러 장이 같이 쓰는 글꼴·그림이
+       장마다 다시 복사돼 파일이 커진다. */
+    var originals = new Map();
+    if (vector) {
+      try {
+        var nums = Array.from(new Set(cfg.slides)).filter(function (n) {
+          return n >= 1 && n <= srcDoc.getPageCount();
+        });
+        var srcPages = nums.map(function (n) { return srcDoc.getPage(n - 1); });
+        var boxes = srcPages.map(function (p) {
+          var b = p.getCropBox();
+          return { left: b.x, bottom: b.y, right: b.x + b.width, top: b.y + b.height };
+        });
+        var embeddedPages = await doc.embedPages(srcPages, boxes);
+        nums.forEach(function (n, k) {
+          var b = srcPages[k].getCropBox();
+          var rot = ((srcPages[k].getRotation().angle % 360) + 360) % 360;
+          var turned = rot === 90 || rot === 270;
+          originals.set(n, {
+            page: embeddedPages[k], rot: rot,
+            aspect: turned ? b.height / b.width : b.width / b.height
+          });
+        });
+      } catch (e) {
+        console.warn('강의자료를 원본 그대로 넣지 못해 그림으로 넣습니다:', e);
+        originals.clear();
+      }
+    }
+
     async function ensureImage(no) {
       if (imgCache.has(no)) return imgCache.get(no);
       var info = null;
       if (no >= 1 && no <= cfg.deckPdf.numPages) {
-        var r = await renderSlide(cfg.deckPdf, no, leftW, cfg.dpi, cfg.imgFormat);
-        var img = r.isPng ? await doc.embedPng(r.dataUrl) : await doc.embedJpg(r.dataUrl);
-        info = { image: img, aspect: r.aspect };
+        info = originals.get(no) || null;
+        if (!info) {
+          var r = await renderSlide(cfg.deckPdf, no, leftW, rasterDpi, cfg.imgFormat);
+          var img = r.isPng ? await doc.embedPng(r.dataUrl) : await doc.embedJpg(r.dataUrl);
+          info = { image: img, aspect: r.aspect };
+        }
       }
       imgCache.set(no, info);
       return info;
+    }
+
+    /* 원본 페이지를 (x, y, w, h) 칸에 놓는다. PDF 의 /Rotate 는 시계 방향이고
+       drawPage 의 rotate 는 놓는 점을 중심으로 반시계 방향이라 놓는 점을 옮겨 준다. */
+    function drawOriginal(page, info, x, y, w, h) {
+      var P = info.page;
+      var turned = info.rot === 90 || info.rot === 270;
+      var sx = (turned ? h : w) / P.width;
+      var sy = (turned ? w : h) / P.height;
+      var at = { 0: [x, y], 90: [x, y + h], 180: [x + w, y + h], 270: [x + w, y] }[info.rot] || [x, y];
+      page.drawPage(P, {
+        x: at[0], y: at[1], xScale: sx, yScale: sy,
+        rotate: PDFLib.degrees(-info.rot)
+      });
     }
 
     function newPage() {
@@ -2853,7 +2914,8 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
       var y = slotTop - (boxH - h) / 2 - h;
 
       if (info) {
-        page.drawImage(info.image, { x: x, y: y, width: w, height: h });
+        if (info.page) drawOriginal(page, info, x, y, w, h);
+        else page.drawImage(info.image, { x: x, y: y, width: w, height: h });
         if (cfg.slideBorder) {
           page.drawRectangle({
             x: x, y: y, width: w, height: h, borderColor: LINE, borderWidth: 0.6
@@ -3059,7 +3121,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
    * 상태
    * ------------------------------------------------------------------ */
   var state = {
-    deck: null,      // {name, size, pdf}
+    deck: null,      // {name, size, pdf, bytes} — bytes 는 원본 페이지를 그대로 넣을 때 쓴다
     notes: [],       // [{name, size, kind, pdf, doc, result}] — kind: 'pdf' | 'docx'
     merged: null,    // Map<slide, entries>
     slides: [],
@@ -3072,7 +3134,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
    * ------------------------------------------------------------------ */
   var DEFAULTS = {
     fontSize: 9, lineSpacing: 1.45, paraGap: 0.5, margin: 10,
-    slidesPer: 2, quality: 150, orient: 'landscape', splitRatio: 50,
+    slidesPer: 2, quality: 'vector', orient: 'landscape', splitRatio: 50,
     colGap: 5, slideGap: 5, offset: 0, joinMode: 'auto', imgFormat: 'jpeg',
     layoutMode: 'aligned', wrapMode: 'word',
     fileName: '강의노트.pdf',
@@ -3082,8 +3144,8 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
   };
 
   var NUMERIC = ['fontSize', 'lineSpacing', 'paraGap', 'margin', 'slidesPer',
-                 'quality', 'splitRatio', 'colGap', 'slideGap', 'offset'];
-  var TEXTY = ['orient', 'joinMode', 'imgFormat', 'fileName', 'layoutMode', 'wrapMode'];
+                 'splitRatio', 'colGap', 'slideGap', 'offset'];
+  var TEXTY = ['quality', 'orient', 'joinMode', 'imgFormat', 'fileName', 'layoutMode', 'wrapMode'];
   var FLAGS = ['showHeader', 'showPageNo', 'slideBorder', 'divider',
                'showSource', 'allowJang', 'allowBare', 'skipEmpty', 'docStyle'];
   var REPARSE = ['joinMode', 'allowJang', 'allowBare', 'offset', 'skipEmpty', 'docStyle'];
@@ -3433,8 +3495,9 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     var file = files[0];
     setStatus(file.name + ' 여는 중…');
     try {
-      var pdf = await openPdf(await readFile(file));
-      state.deck = { name: file.name, size: file.size, pdf: pdf };
+      var bytes = await readFile(file);
+      var pdf = await openPdf(bytes.slice());      // pdf.js 가 버퍼를 넘겨받아 비울 수 있어 사본을 준다
+      state.deck = { name: file.name, size: file.size, pdf: pdf, bytes: bytes };
       renderLists();
       doRecompute();
     } catch (e) {
@@ -3693,6 +3756,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     try {
       var out = await window.NoteLayout.build({
         deckPdf: state.deck.pdf,
+        deckBytes: state.deck.bytes,
         bySlide: state.merged,
         slides: state.slides,
         fontBytes: fontBytes(),
@@ -3713,7 +3777,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
         layoutMode: s.layoutMode,
         wrapMode: s.wrapMode,
         fontFace: s.docStyle ? window.NoteFonts.face : null,
-        dpi: s.quality,
+        dpi: s.quality === 'vector' ? 'vector' : parseFloat(s.quality),
         imgFormat: s.imgFormat
       }, {
         onProgress: function (done, total) {
