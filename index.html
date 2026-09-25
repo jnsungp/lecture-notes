@@ -319,6 +319,37 @@ a.text-link:hover { text-decoration: underline; }
 .files li .meta { flex: none; color: var(--ink-muted-48); font-size: 12px; }
 .files li[data-status="bad"] { border-color: #e8c4c0; background: #fdf6f5; }
 
+/* Word 전사본 글꼴 */
+.fontbox {
+  margin-top: var(--md);
+  padding: var(--md);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--surface-pearl);
+}
+.fontbox .fb-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--xs) var(--sm); }
+.fontbox .fb-title { font-size: 14px; font-weight: 600; letter-spacing: -0.224px; }
+.fontbox .fb-head .caption { font-size: 12px; }
+.fonts { list-style: none; margin: var(--sm) 0 0; padding: 0; }
+.fonts li {
+  display: flex;
+  align-items: center;
+  gap: var(--sm);
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  background: var(--canvas);
+  font-size: 13px;
+  letter-spacing: -0.224px;
+  margin-top: 4px;
+}
+.fonts li .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fonts li .meta { flex: none; color: var(--ink-muted-48); font-size: 12px; }
+.fonts li .src { flex: none; font-size: 12px; color: #2f7a47; }
+.fonts li[data-status="miss"] .src { color: #9a6b12; }
+.fontbox .fb-actions { display: flex; flex-wrap: wrap; gap: var(--xs); margin-top: var(--sm); }
+.fontbox .fine { margin: var(--sm) 0 0; }
+.fontbox .fb-msg { color: var(--ink-muted-80); }
+
 /* ================================================================== *
  * 알림 / 요약
  * ================================================================== */
@@ -556,13 +587,15 @@ footer.site .legal { color: var(--ink-muted-48); }
       </div>
 
       <div class="card">
-        <p class="tagline">전사 필기 PDF</p>
-        <p class="caption" style="margin:0 0 var(--md)">본문에 <code>Page 3</code>, <code>1page</code>, <code>(… 77p.)</code> 같은 페이지 표시가 있어야 합니다.</p>
+        <p class="tagline">전사 필기 PDF · Word</p>
+        <p class="caption" style="margin:0 0 var(--md)">본문에 <code>Page 3</code>, <code>1page</code>, <code>(… 77p.)</code> 같은 페이지 표시가 있어야 합니다.
+          Word(<code>.docx</code>)는 문단과 글꼴·굵기·색을 그대로 가져옵니다.</p>
         <div class="drop" id="dropNotes">
-          <span class="big">PDF 여러 개 고르기</span>
+          <span class="big">PDF · Word 여러 개 고르기</span>
           <span class="caption">넣은 순서대로 이어 붙입니다</span>
         </div>
         <ul class="files" id="listNotes"></ul>
+        <div class="fontbox" id="fontBox" hidden></div>
       </div>
     </div>
 
@@ -652,12 +685,19 @@ footer.site .legal { color: var(--ink-muted-48); }
             <input type="range" id="offset" min="-20" max="20" step="1" value="0">
           </div>
           <div class="field">
-            <label for="joinMode">전사본 줄 이어붙이기</label>
+            <label for="joinMode">PDF 전사본 줄 이어붙이기</label>
             <select id="joinMode">
               <option value="auto" selected>자동</option>
               <option value="space">항상 공백 넣기</option>
               <option value="none">항상 붙여쓰기</option>
               <option value="keep">원본 줄바꿈 그대로</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="wrapMode">필기 줄바꿈</label>
+            <select id="wrapMode">
+              <option value="word" selected>낱말 단위 — 낱말을 자르지 않음</option>
+              <option value="char">글자 단위 — 줄 끝까지 채움</option>
             </select>
           </div>
           <div class="field">
@@ -684,6 +724,7 @@ footer.site .legal { color: var(--ink-muted-48); }
           <label class="check"><input type="checkbox" id="allowJang"> <code>3장</code> 형식도 페이지 표시로 인식</label>
           <label class="check"><input type="checkbox" id="allowBare"> 숫자만 있는 줄도 페이지 표시로 인식</label>
           <label class="check"><input type="checkbox" id="skipEmpty"> 필기가 없는 슬라이드는 빼기</label>
+          <label class="check"><input type="checkbox" id="docStyle" checked> Word 전사본의 글꼴·굵기·색 살리기</label>
         </div>
         <div style="margin-top:var(--lg)">
           <button class="btn btn-pearl" id="btnReset">기본값으로 되돌리기</button>
@@ -721,7 +762,8 @@ footer.site .legal { color: var(--ink-muted-48); }
         <p class="tagline">1. 전사본을 읽습니다</p>
         <p class="caption">필기 PDF에서 글자를 뽑아낸 뒤, <code>Page 3</code>·<code>1page</code>·<code>(… 77p.)</code> 처럼
         한 줄로 떨어져 있는 페이지 표시를 찾습니다. 그 표시를 경계로 글을 슬라이드별로 나눕니다.
-        머리말·쪽번호처럼 모든 쪽에 반복되는 줄은 지웁니다.</p>
+        머리말·쪽번호처럼 모든 쪽에 반복되는 줄은 지웁니다.
+        Word 전사본은 문단이 그대로 들어 있어 줄을 이어붙일 필요 없이 원문 그대로 씁니다.</p>
       </div>
       <div class="card">
         <p class="tagline">2. 슬라이드를 그립니다</p>
@@ -868,9 +910,11 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     var unitWord = 'pages?|pg|p|slide|슬라이드|페이지|쪽';
     var unitNum = 'pages?|pg|p\\.|p|페이지|쪽|슬라이드' + jang;
     var unitBracket = 'p\\.|pages?|pg|페이지|쪽' + jang;
+    // "41-42p." 처럼 두 장을 묶은 표시는 앞 장 번호로 본다
+    var range = '(?:\\s*[-~\\u2010-\\u2015]\\s*\\d{1,4})?';
     return {
       wordFirst: new RegExp('^' + LEAD + '(' + unitWord + ')\\s*[.:#\\-]?\\s*(\\d{1,4})' + TAIL + '$', 'i'),
-      numFirst: new RegExp('^' + LEAD + '(\\d{1,4})\\s*(' + unitNum + ')' + TAIL + '$', 'i'),
+      numFirst: new RegExp('^' + LEAD + '(\\d{1,4})' + range + '\\s*(' + unitNum + ')' + TAIL + '$', 'i'),
       bracketed: /^[\(\[][^\(\)\[\]]*[\)\]]$/,
       inBracket: new RegExp('(\\d{1,4})\\s*(' + unitBracket + ')', 'gi'),
       bare: opts.allowBare
@@ -1215,6 +1259,34 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
    * ------------------------------------------------------------------ */
   var ORPHAN_LIMIT = 300;   // 첫 마커 앞의 짧은 도입부는 첫 슬라이드에 붙인다
 
+  /* 파일 안에서 다수를 차지하는 "모양"의 마커만 남긴다.
+     강의 중 앞뒤로 오간 경우(Page 39 뒤에 Page 38)도 그대로 살린다. */
+  function dominantMarkers(usable) {
+    var counts = Object.create(null);
+    var domShape = null, domCount = 0;
+    usable.forEach(function (c) {
+      counts[c.shape] = (counts[c.shape] || 0) + 1;
+      if (counts[c.shape] > domCount) { domCount = counts[c.shape]; domShape = c.shape; }
+    });
+    var accepted = usable;
+    if (usable.length >= 3 && domCount >= usable.length * 0.6) {
+      accepted = usable.filter(function (c) { return c.shape === domShape; });
+    }
+    return { accepted: accepted, shape: domShape };
+  }
+
+  /* 첫 마커 앞 도입부를 첫 슬라이드에 붙일지 — 짧고 문장으로 끝나야 본문으로 본다.
+     "생리학 3주차 전사본" 같은 표지 줄은 버린다. */
+  function keepPreamble(texts) {
+    if (!texts.length) return false;
+    var chars = texts.reduce(function (a, t) { return a + t.length; }, 0);
+    return chars <= ORPHAN_LIMIT && /[.!?…]$/.test(texts[texts.length - 1].trim());
+  }
+
+  function charsOf(lines) {
+    return lines.reduce(function (a, l) { return a + l.text.replace(/\s/g, '').length; }, 0);
+  }
+
   function analyzeFile(doc, fileName, opts) {
     var rules = buildMarkerRules(opts);
     var running = findRunningLines(doc);
@@ -1230,19 +1302,8 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     // 머리말/꼬리말 밖에 마커가 충분하면 띠 안의 것은 인쇄 쪽번호로 보고 버린다
     var outside = candidates.filter(function (c) { return !c.inRunning; });
     var usable = outside.length >= 2 ? outside : candidates;
-
-    // 파일 안에서 다수를 차지하는 "모양"만 남긴다.
-    // 강의 중 앞뒤로 오간 경우(Page 39 뒤에 Page 38)도 그대로 살린다.
-    var counts = Object.create(null);
-    var domShape = null, domCount = 0;
-    usable.forEach(function (c) {
-      counts[c.shape] = (counts[c.shape] || 0) + 1;
-      if (counts[c.shape] > domCount) { domCount = counts[c.shape]; domShape = c.shape; }
-    });
-    var accepted = usable;
-    if (usable.length >= 3 && domCount >= usable.length * 0.6) {
-      accepted = usable.filter(function (c) { return c.shape === domShape; });
-    }
+    var pick = dominantMarkers(usable);
+    var accepted = pick.accepted, domShape = pick.shape;
 
     var acceptedAt = new Map();
     accepted.forEach(function (c) { acceptedAt.set(c.idx, c.num); });
@@ -1274,6 +1335,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
 
     var bySlide = new Map();
     var preamble = [];
+    var dropped = 0;     // 첫 마커 앞에서 버린 글자 수 — 화면에서 알려 준다
     var curSlide = null;
     var curLines = [];
 
@@ -1299,10 +1361,8 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
         curLines = [];
         // 첫 마커 앞의 짧은 도입부는 첫 슬라이드에 붙여준다
         if (preamble.length) {
-          var chars = preamble.reduce(function (a, l) { return a + l.text.length; }, 0);
-          var tail = preamble[preamble.length - 1].text;
-          // 문장부호로 끝나야 본문으로 본다 — "생리학 3주차 전사본" 같은 표지 줄은 버린다
-          if (chars <= ORPHAN_LIMIT && /[.!?…]$/.test(tail)) curLines = preamble;
+          if (keepPreamble(preamble.map(function (l) { return l.text; }))) curLines = preamble;
+          else dropped += charsOf(preamble);
           preamble = [];
         }
         continue;
@@ -1313,7 +1373,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     }
     flush();
 
-    var dropped = preamble.reduce(function (a, l) { return a + l.text.length; }, 0);
+    dropped += charsOf(preamble);
     var found = Array.from(bySlide.keys()).sort(function (a, b) { return a - b; });
 
     return {
@@ -1326,6 +1386,121 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
       charCount: doc.charCount,
       charsDropped: dropped,
       pageCount: doc.pageCount
+    };
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Word(docx) 전사본 분석
+   *
+   * docx 는 문단이 이미 정확하다. 줄 복원·공백 추정·머리말 제거 없이
+   * 문단을 그대로 슬라이드별로 나누기만 한다.
+   * 문단 안 줄바꿈(Shift+Enter) 뒤에 페이지 표시를 적는 경우도 있어서
+   * 표시는 줄 단위로 찾고, 같은 문단에서 나온 줄은 다시 한 문단으로 묶는다.
+   * ------------------------------------------------------------------ */
+  function splitRuns(runs) {
+    var lines = [[]];
+    runs.forEach(function (r) {
+      r.t.split('\n').forEach(function (t, k) {
+        if (k > 0) lines.push([]);
+        if (t) lines[lines.length - 1].push({ t: t, st: r.st });
+      });
+    });
+    return lines;
+  }
+
+  function trimRuns(runs) {
+    runs = runs.map(function (r) { return { t: r.t, st: r.st }; });
+    while (runs.length && !(runs[0].t = runs[0].t.replace(/^\s+/, ''))) runs.shift();
+    while (runs.length && !(runs[runs.length - 1].t = runs[runs.length - 1].t.replace(/\s+$/, ''))) runs.pop();
+    return runs;
+  }
+
+  function linesToDocParas(lines, plain) {
+    var out = [];
+    var cur = null;
+    lines.forEach(function (ln) {
+      if (cur && cur.pi === ln.pi) {
+        cur.runs.push({ t: '\n', st: null });
+        cur.runs = cur.runs.concat(ln.runs);
+      } else {
+        cur = { pi: ln.pi, runs: ln.runs.slice() };
+        out.push(cur);
+      }
+    });
+    return out.map(function (p) {
+      var runs = trimRuns(p.runs);
+      var text = runs.map(function (r) { return r.t; }).join('');
+      return plain ? text : { text: text, runs: runs };
+    }).filter(function (p) {
+      return (plain ? p : p.text).trim().length > 0;
+    });
+  }
+
+  function analyzeDocx(doc, fileName, opts) {
+    var rules = buildMarkerRules(opts);
+    var lines = [];
+    doc.paragraphs.forEach(function (p, pi) {
+      splitRuns(p.runs).forEach(function (runs) {
+        lines.push({ pi: pi, runs: runs, text: runs.map(function (r) { return r.t; }).join('') });
+      });
+    });
+
+    var candidates = [];
+    lines.forEach(function (ln, i) {
+      var mk = markerFromLine(ln.text, rules);
+      if (validMarker(mk)) candidates.push({ idx: i, num: mk.num, shape: mk.shape });
+    });
+    var pick = dominantMarkers(candidates);
+    var acceptedAt = new Map();
+    pick.accepted.forEach(function (c) { acceptedAt.set(c.idx, c.num); });
+
+    var bySlide = new Map();
+    var preamble = [];
+    var dropped = 0;
+    var curSlide = null;
+    var curLines = [];
+
+    function flush() {
+      if (curSlide === null || !curLines.length) return;
+      var paras = linesToDocParas(curLines, opts.plain);
+      if (!paras.length) return;
+      if (!bySlide.has(curSlide)) bySlide.set(curSlide, []);
+      var arr = bySlide.get(curSlide);
+      var last = arr[arr.length - 1];
+      if (last && last.file === fileName) last.paragraphs = last.paragraphs.concat(paras);
+      else arr.push({ file: fileName, paragraphs: paras });
+    }
+
+    for (var i = 0; i < lines.length; i++) {
+      if (acceptedAt.has(i)) {
+        flush();
+        curSlide = acceptedAt.get(i);
+        curLines = [];
+        if (preamble.length) {
+          var texts = preamble.map(function (l) { return l.text.trim(); })
+                              .filter(function (t) { return t; });
+          if (keepPreamble(texts)) curLines = preamble;
+          else dropped += charsOf(preamble);
+          preamble = [];
+        }
+        continue;
+      }
+      if (curSlide === null) preamble.push(lines[i]);
+      else curLines.push(lines[i]);
+    }
+    flush();
+
+    dropped += charsOf(preamble);
+    return {
+      file: fileName,
+      bySlide: bySlide,
+      slides: Array.from(bySlide.keys()).sort(function (a, b) { return a - b; }),
+      markerCount: pick.accepted.length,
+      droppedMarkers: candidates.length - pick.accepted.length,
+      shape: pick.shape,
+      charCount: doc.charCount,
+      charsDropped: dropped,
+      pageCount: 0
     };
   }
 
@@ -1359,11 +1534,838 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
   global.NoteParse = {
     extractDoc: extractDoc,
     analyzeFile: analyzeFile,
+    analyzeDocx: analyzeDocx,
     mergeAnalyses: mergeAnalyses,
     formatRanges: formatRanges,
     markerFromLine: markerFromLine,
     buildMarkerRules: buildMarkerRules,
     isCJK: isCJK
+  };
+})(window);
+
+</script>
+<script>
+/* docx.js */
+/* docx.js — Word(docx) 전사본을 읽는다. 브라우저 전역 window.NoteDocx 로 노출.
+
+   docx 에는 글이 문단 단위로 그대로 들어 있다. PDF처럼 줄을 이어붙이며
+   공백을 추정할 필요가 없으므로, 문단 = Word 의 문단 그대로다.
+   글자마다 글꼴·굵기·기울임·밑줄·색·형광펜도 함께 뽑아 결과 PDF에 살린다. */
+(function (global) {
+  'use strict';
+
+  /* ------------------------------------------------------------------ *
+   * ZIP — docx 는 zip 이다. 브라우저 내장 DecompressionStream 으로 푼다.
+   * ------------------------------------------------------------------ */
+  function u16(b, o) { return b[o] | (b[o + 1] << 8); }
+  function u32(b, o) { return (b[o] | (b[o + 1] << 8) | (b[o + 2] << 16)) + b[o + 3] * 16777216; }
+
+  function readZip(bytes) {
+    // 끝의 중앙 디렉터리 표시를 뒤에서부터 찾는다 (뒤에 주석이 붙어 있을 수 있다)
+    var eocd = -1;
+    for (var i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i--) {
+      if (u32(bytes, i) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error('docx 파일이 아닙니다.');
+    var count = u16(bytes, eocd + 10);
+    var off = u32(bytes, eocd + 16);
+    var dec = new TextDecoder('utf-8');
+    var entries = Object.create(null);
+    for (var n = 0; n < count && off + 46 <= bytes.length; n++) {
+      if (u32(bytes, off) !== 0x02014b50) break;
+      var nameLen = u16(bytes, off + 28);
+      var name = dec.decode(bytes.subarray(off + 46, off + 46 + nameLen));
+      entries[name] = {
+        method: u16(bytes, off + 10),
+        csize: u32(bytes, off + 20),
+        local: u32(bytes, off + 42)
+      };
+      off += 46 + nameLen + u16(bytes, off + 30) + u16(bytes, off + 32);
+    }
+    return entries;
+  }
+
+  async function unzipEntry(bytes, e) {
+    if (u32(bytes, e.local) !== 0x04034b50) throw new Error('docx 압축이 손상되었습니다.');
+    var start = e.local + 30 + u16(bytes, e.local + 26) + u16(bytes, e.local + 28);
+    var data = bytes.subarray(start, start + e.csize);
+    if (e.method === 0) return data;
+    if (e.method !== 8) throw new Error('docx 압축 방식(' + e.method + ')을 풀 수 없습니다.');
+    if (typeof DecompressionStream === 'undefined') {
+      throw new Error('이 브라우저는 docx 를 풀 수 없습니다. 최신 크롬·엣지·사파리·파이어폭스에서 열어 주세요.');
+    }
+    var out = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Uint8Array(await new Response(out).arrayBuffer());
+  }
+
+  function decodeText(b) {
+    if (b[0] === 0xFF && b[1] === 0xFE) return new TextDecoder('utf-16le').decode(b);
+    if (b[0] === 0xFE && b[1] === 0xFF) return new TextDecoder('utf-16be').decode(b);
+    return new TextDecoder('utf-8').decode(b);
+  }
+
+  function parseXml(text, part) {
+    var d = new DOMParser().parseFromString(text, 'application/xml');
+    if (d.getElementsByTagName('parsererror').length) {
+      throw new Error('docx 안의 ' + part + ' 을(를) 읽지 못했습니다.');
+    }
+    return d;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * XML 도우미 — 접두어(w:)가 아니라 이름(localName)으로 찾는다.
+   * Strict OOXML 처럼 이름공간이 다른 파일도 같은 코드로 읽힌다.
+   * ------------------------------------------------------------------ */
+  var MAIN_NS = {
+    'http://schemas.openxmlformats.org/wordprocessingml/2006/main': 1,
+    'http://purl.oclc.org/ooxml/wordprocessingml/main': 1
+  };
+  var REL_NS = /relationships$/;
+
+  function A(el, name) {
+    if (!el) return null;
+    var at = el.attributes, any = null;
+    for (var i = 0; i < at.length; i++) {
+      if (at[i].localName !== name) continue;
+      if (MAIN_NS[at[i].namespaceURI]) return at[i].value;
+      if (any === null) any = at[i].value;
+    }
+    return any;
+  }
+
+  function relId(el) {
+    var at = el.attributes;
+    for (var i = 0; i < at.length; i++) {
+      if (at[i].localName === 'id' && REL_NS.test(at[i].namespaceURI || '')) return at[i].value;
+    }
+    return null;
+  }
+
+  function kid(el, name) {
+    for (var c = el && el.firstElementChild; c; c = c.nextElementSibling) {
+      if (c.localName === name) return c;
+    }
+    return null;
+  }
+
+  function kids(el, name) {
+    var out = [];
+    for (var c = el && el.firstElementChild; c; c = c.nextElementSibling) {
+      if (c.localName === name) out.push(c);
+    }
+    return out;
+  }
+
+  // <w:b/>, <w:b w:val="0"/> 같은 켜고 끄는 속성
+  function onoff(el) {
+    var v = A(el, 'val');
+    return !(v === '0' || v === 'false' || v === 'off');
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 글자 서식 (rPr)
+   * ------------------------------------------------------------------ */
+  var HIGHLIGHT = {
+    yellow: 'FFFF00', green: '00FF00', cyan: '00FFFF', magenta: 'FF00FF',
+    blue: '0000FF', red: 'FF0000', darkBlue: '000080', darkCyan: '008080',
+    darkGreen: '008000', darkMagenta: '800080', darkRed: '800000',
+    darkYellow: '808000', darkGray: '808080', lightGray: 'C0C0C0',
+    black: '000000', white: 'FFFFFF'
+  };
+
+  function hex(v) {
+    return (v && /^[0-9A-Fa-f]{6}$/.test(v)) ? v.toUpperCase() : null;
+  }
+
+  /* 한 rPr 요소에 적힌 것만 담는다. 여러 겹(기본값 → 스타일 → 직접 서식)을
+     차례로 덮어써서 최종 서식을 얻는다. */
+  function readRPr(rPr) {
+    var p = {};
+    for (var c = rPr && rPr.firstElementChild; c; c = c.nextElementSibling) {
+      switch (c.localName) {
+        case 'rStyle': p.rStyle = A(c, 'val'); break;
+        case 'rFonts':
+          // 테마 글꼴 지정이 이름 지정보다 우선한다
+          ['ascii', 'hAnsi', 'eastAsia'].forEach(function (k) {
+            var th = A(c, k + 'Theme'), nm = A(c, k);
+            if (th) p['f_' + k] = 'theme:' + th;
+            else if (nm) p['f_' + k] = nm;
+          });
+          var hint = A(c, 'hint');
+          if (hint) p.hintEa = hint === 'eastAsia';
+          break;
+        case 'b': p.b = onoff(c); break;
+        case 'i': p.i = onoff(c); break;
+        case 'strike': case 'dstrike': p.strike = onoff(c); break;
+        case 'caps': p.caps = onoff(c); break;
+        case 'vanish': p.vanish = onoff(c); break;
+        case 'u': var u = A(c, 'val'); p.u = !!u && u !== 'none'; break;
+        case 'color': p.color = hex(A(c, 'val')) || 'auto'; break;
+        case 'highlight': p.hl = HIGHLIGHT[A(c, 'val')] || null; break;
+        case 'shd': var fill = hex(A(c, 'fill')); if (fill) p.shd = fill; break;
+        case 'lang': var ea = A(c, 'eastAsia'); if (ea) p.langEa = ea; break;
+      }
+    }
+    return p;
+  }
+
+  function assign(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var s = arguments[i];
+      if (!s) continue;
+      for (var k in s) if (s[k] !== undefined) target[k] = s[k];
+    }
+    return target;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 스타일 · 테마 · 번호 매기기
+   * ------------------------------------------------------------------ */
+  function readStyles(doc) {
+    var st = { byId: Object.create(null), defPara: null, defChar: null, docR: {}, cache: Object.create(null) };
+    if (!doc) return st;
+    var root = doc.documentElement;
+    var dd = kid(root, 'docDefaults');
+    if (dd) st.docR = readRPr(kid(kid(dd, 'rPrDefault'), 'rPr'));
+    kids(root, 'style').forEach(function (s) {
+      var id = A(s, 'styleId');
+      var type = A(s, 'type');
+      var pPr = kid(s, 'pPr');
+      st.byId[id] = {
+        type: type,
+        basedOn: A(kid(s, 'basedOn'), 'val'),
+        r: readRPr(kid(s, 'rPr')),
+        numPr: readNumPr(pPr)
+      };
+      var def = A(s, 'default');
+      if (def === '1' || def === 'true') {
+        if (type === 'paragraph') st.defPara = id;
+        if (type === 'character') st.defChar = id;
+      }
+    });
+    return st;
+  }
+
+  /* basedOn 을 거슬러 올라가며 합친 글자 서식 (조상부터 덮어쓴다) */
+  function chainR(st, id) {
+    if (!id) return {};
+    if (st.cache[id]) return st.cache[id];
+    var chain = [], seen = Object.create(null), cur = id;
+    while (cur && st.byId[cur] && !seen[cur]) {
+      seen[cur] = 1;
+      chain.unshift(st.byId[cur].r);
+      cur = st.byId[cur].basedOn;
+    }
+    var out = assign.apply(null, [{}].concat(chain));
+    delete out.rStyle;
+    st.cache[id] = out;
+    return out;
+  }
+
+  function chainNumPr(st, id) {
+    var seen = Object.create(null);
+    while (id && st.byId[id] && !seen[id]) {
+      seen[id] = 1;
+      if (st.byId[id].numPr) return st.byId[id].numPr;
+      id = st.byId[id].basedOn;
+    }
+    return null;
+  }
+
+  function readNumPr(pPr) {
+    var np = kid(pPr, 'numPr');
+    if (!np) return null;
+    var numId = A(kid(np, 'numId'), 'val');
+    if (numId === null) return null;
+    return { numId: numId, ilvl: parseInt(A(kid(np, 'ilvl'), 'val') || '0', 10) || 0 };
+  }
+
+  function readTheme(doc) {
+    var th = { major: { latin: null, ea: null, scripts: {} }, minor: { latin: null, ea: null, scripts: {} } };
+    if (!doc) return th;
+    ['major', 'minor'].forEach(function (k) {
+      var node = doc.getElementsByTagNameNS('*', k + 'Font')[0];
+      if (!node) return;
+      var set = th[k];
+      set.latin = A(kid(node, 'latin'), 'typeface') || null;
+      set.ea = A(kid(node, 'ea'), 'typeface') || null;
+      kids(node, 'font').forEach(function (f) { set.scripts[A(f, 'script')] = A(f, 'typeface'); });
+    });
+    return th;
+  }
+
+  function scriptOf(lang) {
+    var l = String(lang || 'ko-KR').toLowerCase();
+    if (/^ja/.test(l)) return 'Jpan';
+    if (/^zh-(tw|hk|mo)/.test(l)) return 'Hant';
+    if (/^zh/.test(l)) return 'Hans';
+    return 'Hang';
+  }
+
+  function readNumbering(doc) {
+    var abs = Object.create(null), nums = Object.create(null);
+    if (!doc) return { abs: abs, nums: nums };
+    var root = doc.documentElement;
+    kids(root, 'abstractNum').forEach(function (a) {
+      var lv = {};
+      kids(a, 'lvl').forEach(function (l) {
+        lv[A(l, 'ilvl')] = {
+          start: parseInt(A(kid(l, 'start'), 'val') || '1', 10),
+          fmt: A(kid(l, 'numFmt'), 'val') || 'decimal',
+          text: A(kid(l, 'lvlText'), 'val')
+        };
+      });
+      abs[A(a, 'abstractNumId')] = lv;
+    });
+    kids(root, 'num').forEach(function (n) {
+      var over = {};
+      kids(n, 'lvlOverride').forEach(function (o) {
+        var so = kid(o, 'startOverride');
+        if (so) over[A(o, 'ilvl')] = parseInt(A(so, 'val'), 10);
+      });
+      nums[A(n, 'numId')] = { abs: A(kid(n, 'abstractNumId'), 'val'), over: over };
+    });
+    return { abs: abs, nums: nums };
+  }
+
+  function roman(n) {
+    var map = [[1000, 'm'], [900, 'cm'], [500, 'd'], [400, 'cd'], [100, 'c'], [90, 'xc'],
+               [50, 'l'], [40, 'xl'], [10, 'x'], [9, 'ix'], [5, 'v'], [4, 'iv'], [1, 'i']];
+    var out = '';
+    for (var i = 0; i < map.length; i++) while (n >= map[i][0]) { out += map[i][1]; n -= map[i][0]; }
+    return out;
+  }
+
+  function letters(n) {
+    var ch = String.fromCharCode(97 + (n - 1) % 26);
+    return new Array(Math.floor((n - 1) / 26) + 2).join(ch);
+  }
+
+  function fmtNum(n, fmt) {
+    switch (fmt) {
+      case 'decimalZero': return (n < 10 ? '0' : '') + n;
+      case 'upperRoman': return roman(n).toUpperCase();
+      case 'lowerRoman': return roman(n);
+      case 'upperLetter': return letters(n).toUpperCase();
+      case 'lowerLetter': return letters(n);
+      case 'ganada': return '가나다라마바사아자차카타파하'.charAt((n - 1) % 14);
+      case 'chosung': return 'ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎ'.charAt((n - 1) % 14);
+      case 'decimalEnclosedCircle':
+      case 'decimalEnclosedCircleChinese':
+        return n >= 1 && n <= 20 ? String.fromCharCode(0x2460 + n - 1) : String(n);
+      case 'koreanDigital':
+      case 'koreanCounting':
+        return n >= 1 && n <= 10 ? '일이삼사오육칠팔구십'.charAt(n - 1) : String(n);
+      case 'none': return '';
+      default: return String(n);
+    }
+  }
+
+  /* Symbol·Wingdings 글꼴의 사용자 영역 글자는 다른 글꼴에선 빈칸이 되므로
+     생김새가 비슷한 보통 글자로 바꾼다. */
+  var BULLETS = { '': '•', '': '▪', '': '➢', '': '✓', '': '❖', 'o': '◦' };
+
+  function bulletText(t) {
+    if (!t) return '•';
+    if (BULLETS[t]) return BULLETS[t];
+    return /[-]/.test(t) ? '•' : t;
+  }
+
+  function Numberer(numbering) {
+    var counters = Object.create(null);
+    return function label(numPr) {
+      if (!numPr || numPr.numId === '0') return null;
+      var num = numbering.nums[numPr.numId];
+      var lvls = num && numbering.abs[num.abs];
+      if (!lvls) return null;
+      var lvl = lvls[numPr.ilvl];
+      if (!lvl) return null;
+      if (lvl.fmt === 'bullet') return bulletText(lvl.text);
+      var c = counters[numPr.numId] || (counters[numPr.numId] = []);
+      for (var k = 0; k <= numPr.ilvl; k++) {
+        if (c[k] === undefined) {
+          var st = num.over[k] !== undefined ? num.over[k] : (lvls[k] ? lvls[k].start : 1);
+          c[k] = (k === numPr.ilvl) ? st - 1 : st;
+        }
+      }
+      c[numPr.ilvl]++;
+      c.length = numPr.ilvl + 1;           // 더 깊은 단계는 다시 센다
+      var text = lvl.text === null ? '%' + (numPr.ilvl + 1) + '.' : lvl.text;
+      return text.replace(/%([1-9])/g, function (_, d) {
+        var k = parseInt(d, 10) - 1;
+        return c[k] === undefined ? '' : fmtNum(c[k], lvls[k] ? lvls[k].fmt : 'decimal');
+      });
+    };
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 글자별 글꼴 — Word 와 같은 규칙으로 고른다.
+   *   한글·한자·가나·전각 → 동아시아 글꼴 (eastAsia)
+   *   ASCII              → ascii 글꼴
+   *   그 밖의 라틴·기호    → hAnsi 글꼴. 단, hint="eastAsia" 면 따옴표·가운뎃점
+   *                         같은 겸용 기호도 동아시아 글꼴로 그린다.
+   * ------------------------------------------------------------------ */
+  function isEastAsian(c) {
+    return (c >= 0x1100 && c <= 0x11FF) || (c >= 0x2E80 && c <= 0x2FDF) ||
+           (c >= 0x3000 && c <= 0x30FF) || (c >= 0x3130 && c <= 0x318F) ||
+           (c >= 0x31F0 && c <= 0x4DBF) || (c >= 0x4E00 && c <= 0x9FFF) ||
+           (c >= 0xA960 && c <= 0xA97F) || (c >= 0xAC00 && c <= 0xD7FF) ||
+           (c >= 0xF900 && c <= 0xFAFF) || (c >= 0xFE30 && c <= 0xFE4F) ||
+           (c >= 0xFF00 && c <= 0xFFEF);
+  }
+
+  function isShared(c) {
+    return c === 0xA7 || c === 0xB0 || c === 0xB1 || c === 0xB7 || c === 0xD7 || c === 0xF7 ||
+           (c >= 0x2010 && c <= 0x203B) || (c >= 0x2190 && c <= 0x22FF) ||
+           (c >= 0x2460 && c <= 0x26FF);
+  }
+
+  function fontFor(ch, st) {
+    var c = ch.charCodeAt(0);
+    if (isEastAsian(c)) return st.fe;
+    if (c < 0x80) return st.fa;
+    if (st.hintEa && isShared(c)) return st.fe;
+    return st.fh;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 본문
+   * ------------------------------------------------------------------ */
+  var RE_CTRL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
+
+  function Reader(ctx) {
+    var styleTable = Object.create(null);
+    var numberer = Numberer(ctx.numbering);
+    var paragraphs = [];
+
+    function fontName(v) {
+      if (!v) return null;
+      if (v.indexOf('theme:') !== 0) return v;
+      var t = v.slice(6);
+      var set = /^major/.test(t) ? ctx.theme.major : ctx.theme.minor;
+      if (/EastAsia$/.test(t)) return set.ea || set.scripts[scriptOf(ctx.themeLang)] || null;
+      if (/Bidi$/.test(t)) return null;
+      return set.latin || null;
+    }
+
+    /* 최종 서식 → 그리기용 서식 객체. 같은 서식은 같은 객체를 쓴다. */
+    function styleOf(p) {
+      var s = {
+        fa: fontName(p.f_ascii),
+        fh: fontName(p.f_hAnsi || p.f_ascii),
+        fe: fontName(p.f_eastAsia),
+        hintEa: !!p.hintEa,
+        b: !!p.b, i: !!p.i, u: !!p.u, strike: !!p.strike,
+        color: (p.color && p.color !== 'auto') ? p.color : null,
+        hl: p.hl || p.shd || null
+      };
+      return intern(s);
+    }
+
+    function intern(s) {
+      var key = JSON.stringify(s);
+      return styleTable[key] || (styleTable[key] = s);
+    }
+
+    function paragraph(pEl) {
+      var pPr = kid(pEl, 'pPr');
+      var pStyle = A(kid(pPr, 'pStyle'), 'val') || ctx.styles.defPara;
+      var base = assign({}, ctx.styles.docR, chainR(ctx.styles, pStyle));
+      delete base.rStyle;
+      var runs = [];
+
+      function push(text, props) {
+        if (!text) return;
+        if (props.caps) text = text.toUpperCase();
+        var st = styleOf(props);
+        var last = runs[runs.length - 1];
+        if (last && last.st === st) last.t += text;
+        else runs.push({ t: text, st: st });
+      }
+
+      function run(rEl) {
+        var direct = readRPr(kid(rEl, 'rPr'));
+        var props = assign({}, base, chainR(ctx.styles, direct.rStyle || ctx.styles.defChar), direct);
+        if (props.vanish) return;                    // 숨긴 글자
+        var text = '';
+        for (var c = rEl.firstElementChild; c; c = c.nextElementSibling) {
+          switch (c.localName) {
+            case 't': text += c.textContent; break;
+            case 'tab': case 'ptab': text += '\t'; break;
+            case 'br': case 'cr': text += '\n'; break;
+            case 'noBreakHyphen': text += '-'; break;
+            case 'sym':
+              var code = parseInt(A(c, 'char') || '', 16);
+              if (code >= 0xF000) text += bulletText(String.fromCharCode(code));
+              else if (code > 0) text += String.fromCharCode(code);
+              break;
+            // instrText(필드 명령), delText(지운 글자), 그림, 각주 표시는 본문이 아니다
+          }
+        }
+        push(text, props);
+      }
+
+      function inline(el) {
+        for (var c = el.firstElementChild; c; c = c.nextElementSibling) {
+          switch (c.localName) {
+            case 'r': run(c); break;
+            case 'hyperlink': case 'smartTag': case 'customXml': case 'ins':
+            case 'moveTo': case 'fldSimple': case 'dir': case 'bdo':
+              inline(c); break;
+            case 'sdt': var sc = kid(c, 'sdtContent'); if (sc) inline(sc); break;
+            case 'oMath': case 'oMathPara': push(mathText(c), base); break;
+            // del, moveFrom: 지운 글자 — 넣지 않는다
+          }
+        }
+      }
+
+      inline(pEl);
+
+      var numPr = readNumPr(pPr) || chainNumPr(ctx.styles, pStyle);
+      var label = numberer(numPr);
+      if (label) {
+        var first = runs.length ? runs[0].st : styleOf(base);
+        runs.unshift({ t: label + ' ', st: intern(assign({}, first, { u: false, hl: null, strike: false })) });
+      }
+
+      runs.forEach(function (r) { r.t = r.t.replace(RE_CTRL, ''); });
+      runs = runs.filter(function (r) { return r.t.length > 0; });
+      paragraphs.push({
+        text: runs.map(function (r) { return r.t; }).join(''),
+        runs: runs
+      });
+    }
+
+    function mathText(el) {
+      var out = '';
+      var ts = el.getElementsByTagNameNS('*', 't');
+      for (var i = 0; i < ts.length; i++) out += ts[i].textContent;
+      return out;
+    }
+
+    function block(el) {
+      for (var c = el && el.firstElementChild; c; c = c.nextElementSibling) {
+        switch (c.localName) {
+          case 'p': paragraph(c); break;
+          case 'tbl':
+            kids(c, 'tr').forEach(function (tr) {
+              kids(tr, 'tc').forEach(function (tc) { block(tc); });
+            });
+            break;
+          case 'sdt': block(kid(c, 'sdtContent')); break;
+          case 'customXml': case 'ins': case 'moveTo': block(c); break;
+        }
+      }
+    }
+
+    return { block: block, paragraphs: paragraphs };
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 문서에 심긴 글꼴 — ECMA-376 의 난독화(첫 32바이트를 GUID 로 XOR)를 푼다.
+   * ------------------------------------------------------------------ */
+  function deobfuscate(data, fontKey) {
+    var g = String(fontKey || '').replace(/[{}\-]/g, '');
+    if (!/^[0-9A-Fa-f]{32}$/.test(g)) return data;
+    var key = [];
+    for (var i = 15; i >= 0; i--) key.push(parseInt(g.substr(i * 2, 2), 16));
+    var out = new Uint8Array(data);
+    for (var j = 0; j < 32 && j < out.length; j++) out[j] ^= key[j % 16];
+    return out;
+  }
+
+  function readRels(doc) {
+    var map = Object.create(null);
+    if (!doc) return map;
+    var rs = doc.getElementsByTagNameNS('*', 'Relationship');
+    for (var i = 0; i < rs.length; i++) map[rs[i].getAttribute('Id')] = rs[i].getAttribute('Target');
+    return map;
+  }
+
+  var EMBED_FACES = { embedRegular: 'r', embedBold: 'b', embedItalic: 'i', embedBoldItalic: 'bi' };
+
+  /* ------------------------------------------------------------------ *
+   * 본체
+   * ------------------------------------------------------------------ */
+  async function extract(bytes) {
+    if (!(bytes[0] === 0x50 && bytes[1] === 0x4B)) {
+      throw new Error('docx 파일이 아닙니다. 옛 Word 형식(.doc)이면 Word 에서 "Word 문서(.docx)"로 다시 저장해 주세요.');
+    }
+    var zip = readZip(bytes);
+    async function part(name) {
+      var e = zip[name];
+      return e ? decodeText(await unzipEntry(bytes, e)) : null;
+    }
+    async function xml(name) {
+      var t = await part(name);
+      return t === null ? null : parseXml(t, name);
+    }
+
+    var docXml = await xml('word/document.xml');
+    if (!docXml) throw new Error('Word 문서 본문(word/document.xml)이 없습니다.');
+    var settings = await xml('word/settings.xml');
+    var themeLang = null;
+    if (settings) {
+      var tfl = settings.getElementsByTagNameNS('*', 'themeFontLang')[0];
+      themeLang = tfl ? A(tfl, 'eastAsia') : null;
+    }
+    var ctx = {
+      styles: readStyles(await xml('word/styles.xml')),
+      theme: readTheme(await xml('word/theme/theme1.xml')),
+      numbering: readNumbering(await xml('word/numbering.xml')),
+      themeLang: themeLang
+    };
+
+    var reader = Reader(ctx);
+    reader.block(docXml.getElementsByTagNameNS('*', 'body')[0]);
+    var paragraphs = reader.paragraphs;
+
+    /* 글꼴 목록 — 문서에 적힌 이름, 다른 이름, 심긴 글꼴 */
+    var fonts = Object.create(null);
+    var ft = await xml('word/fontTable.xml');
+    if (ft) {
+      var rels = readRels(await xml('word/_rels/fontTable.xml.rels'));
+      var list = kids(ft.documentElement, 'font');
+      for (var i = 0; i < list.length; i++) {
+        var f = list[i];
+        var name = A(f, 'name');
+        var info = { alt: A(kid(f, 'altName'), 'val'), embedded: {} };
+        for (var tag in EMBED_FACES) {
+          var em = kid(f, tag);
+          if (!em) continue;
+          var target = rels[relId(em)];
+          if (!target) continue;
+          var path = 'word/' + target.replace(/^\/?word\//, '').replace(/^\//, '');
+          var entry = zip[path];
+          if (!entry) continue;
+          info.embedded[EMBED_FACES[tag]] = deobfuscate(await unzipEntry(bytes, entry), A(em, 'fontKey'));
+        }
+        fonts[name] = info;
+      }
+    }
+
+    /* 실제로 어떤 글꼴로 몇 글자를 그리는지 */
+    var usage = Object.create(null);
+    var chars = 0;
+    paragraphs.forEach(function (p) {
+      p.runs.forEach(function (r) {
+        for (var k = 0; k < r.t.length; k++) {
+          var ch = r.t.charAt(k);
+          if (/\s/.test(ch)) continue;
+          chars++;
+          var nm = fontFor(ch, r.st);
+          if (nm) usage[nm] = (usage[nm] || 0) + 1;
+        }
+      });
+    });
+
+    return {
+      kind: 'docx',
+      paragraphs: paragraphs,
+      fonts: fonts,
+      usage: usage,
+      charCount: chars,
+      pageCount: 0
+    };
+  }
+
+  global.NoteDocx = {
+    extract: extract,
+    fontFor: fontFor,
+    isEastAsian: isEastAsian
+  };
+})(window);
+
+</script>
+<script>
+/* fonts.js */
+/* fonts.js — Word 전사본이 쓰는 글꼴을 찾아 둔다. 브라우저 전역 window.NoteFonts 로 노출.
+
+   docx 에는 보통 글꼴 이름만 적혀 있고 파일은 들어 있지 않다. 그래서 세 곳에서 찾는다.
+     file      사용자가 직접 넣은 글꼴 파일 (.ttf .otf .ttc)
+     embedded  docx 안에 심긴 글꼴 (Word 의 "파일에 글꼴 포함")
+     local     이 컴퓨터에 설치된 글꼴 — 크롬·엣지의 Local Font Access 로 읽는다
+   앞의 것이 우선이다. 어디에도 없으면 기본 글꼴(Noto Sans KR)로 대신한다. */
+(function (global) {
+  'use strict';
+
+  /* Word 는 한글 이름으로 적기도 하고 영문 이름으로 적기도 한다 */
+  var ALIASES = [
+    ['맑은 고딕', 'Malgun Gothic'], ['맑은 고딕 Semilight', 'Malgun Gothic Semilight'],
+    ['바탕', 'Batang'], ['바탕체', 'BatangChe'], ['굴림', 'Gulim'], ['굴림체', 'GulimChe'],
+    ['돋움', 'Dotum'], ['돋움체', 'DotumChe'], ['궁서', 'Gungsuh'], ['궁서체', 'GungsuhChe'],
+    ['나눔고딕', 'NanumGothic'], ['나눔명조', 'NanumMyeongjo'], ['나눔바른고딕', 'NanumBarunGothic'],
+    ['나눔스퀘어', 'NanumSquare'], ['나눔고딕코딩', 'NanumGothicCoding'],
+    ['함초롬바탕', 'HCR Batang'], ['함초롬돋움', 'HCR Dotum'],
+    ['한컴바탕', 'HANBatang'], ['새굴림', 'New Gulim'],
+    ['본고딕', 'Source Han Sans K'], ['본명조', 'Source Han Serif K'],
+    ['애플SD 산돌고딕 Neo', 'Apple SD Gothic Neo'],
+    ['游ゴシック', 'Yu Gothic'], ['游明朝', 'Yu Mincho'], ['ＭＳ 明朝', 'MS Mincho'],
+    ['ＭＳ ゴシック', 'MS Gothic'], ['微软雅黑', 'Microsoft YaHei'], ['宋体', 'SimSun']
+  ];
+
+  function norm(name) {
+    return String(name || '').normalize('NFKC').toLowerCase().replace(/[\s_\-]/g, '');
+  }
+
+  var aliasOf = Object.create(null);
+  function link(a, b) {
+    var ka = canon(a), kb = canon(b);
+    if (ka !== kb) aliasOf[ka] = kb;
+  }
+  function canon(name) {
+    var k = norm(name), seen = 0;
+    while (aliasOf[k] && seen++ < 8) k = aliasOf[k];
+    return k;
+  }
+  ALIASES.forEach(function (p) { link(p[0], p[1]); });
+
+  var families = new Map();     // canon → { name, faces: {r,b,i,bi} }
+  var RANK = { local: 1, embedded: 2, file: 3 };
+
+  function faceKey(bold, italic) {
+    return bold ? (italic ? 'bi' : 'b') : (italic ? 'i' : 'r');
+  }
+
+  /* 글꼴 모양 이름(subfamily) → r/b/i/bi. Light·Black 같은 굵기는 따로 둔다. */
+  function classify(style) {
+    var s = String(style || '').toLowerCase().replace(/[\s\-_]/g, '');
+    if (s === '' || s === 'regular' || s === 'normal' || s === 'book' || s === 'roman') return 'r';
+    if (s === 'bold') return 'b';
+    if (s === 'italic' || s === 'oblique') return 'i';
+    if (s === 'bolditalic' || s === 'boldoblique') return 'bi';
+    return null;
+  }
+
+  function put(family, key, face) {
+    if (!family) return;
+    var c = canon(family);
+    var fam = families.get(c);
+    if (!fam) { fam = { name: family, faces: {} }; families.set(c, fam); }
+    var cur = fam.faces[key];
+    if (!cur || RANK[face.source] >= RANK[cur.source]) fam.faces[key] = face;
+  }
+
+  function register(family, fullName, style, face) {
+    var key = classify(style);
+    if (key) put(family, key, face);
+    else put(fullName || (family + ' ' + style), 'r', face);   // "Aptos Light" 처럼 이름으로 부르는 굵기
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 세 가지 출처
+   * ------------------------------------------------------------------ */
+  function addEmbedded(docFonts) {
+    var n = 0;
+    Object.keys(docFonts || {}).forEach(function (name) {
+      var info = docFonts[name];
+      if (info.alt) link(info.alt, name);
+      Object.keys(info.embedded || {}).forEach(function (key) {
+        var bytes = info.embedded[key];
+        put(name, key, { source: 'embedded', bytes: bytes, ps: null });
+        n++;
+      });
+    });
+    return n;
+  }
+
+  function fontsIn(bytes) {
+    var fk = global.fontkit.create(bytes);
+    return fk.fonts ? fk.fonts : [fk];
+  }
+
+  /* 사용자가 넣은 글꼴 파일. 등록한 글꼴 이름 목록을 돌려준다. */
+  function addFile(bytes) {
+    var names = [];
+    fontsIn(bytes).forEach(function (f) {
+      var family = f.familyName;
+      register(family, f.fullName, f.subfamilyName,
+               { source: 'file', bytes: bytes, ps: f.postscriptName });
+      names.push(f.fullName || family);
+    });
+    return names;
+  }
+
+  var localState = null;      // null | 'loading' | 'done' | 'denied' | 'unsupported'
+
+  function localSupported() { return typeof global.queryLocalFonts === 'function'; }
+
+  /* 이미 허락받았으면 버튼을 누르지 않아도 바로 읽는다 */
+  async function localGranted() {
+    if (!localSupported() || !navigator.permissions) return false;
+    try {
+      var p = await navigator.permissions.query({ name: 'local-fonts' });
+      return p.state === 'granted';
+    } catch (e) { return false; }
+  }
+
+  /* 이 컴퓨터의 글꼴 목록을 받는다. 허락 창이 뜨므로 버튼 클릭 안에서 불러야 한다. */
+  async function loadLocal() {
+    if (!localSupported()) { localState = 'unsupported'; return localState; }
+    localState = 'loading';
+    try {
+      var list = await global.queryLocalFonts();
+      list.forEach(function (fd) {
+        register(fd.family, fd.fullName, fd.style, {
+          source: 'local',
+          ps: fd.postscriptName,
+          load: function () {
+            return fd.blob().then(function (b) { return b.arrayBuffer(); })
+                     .then(function (ab) { return new Uint8Array(ab); });
+          }
+        });
+      });
+      localState = list.length ? 'done' : 'denied';
+    } catch (e) {
+      localState = 'denied';
+    }
+    return localState;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 찾기
+   * ------------------------------------------------------------------ */
+  function family(name) { return name ? families.get(canon(name)) || null : null; }
+
+  function sourceOf(name) {
+    var fam = family(name);
+    if (!fam) return null;
+    var f = fam.faces.r || fam.faces.b || fam.faces.i || fam.faces.bi;
+    return f ? f.source : null;
+  }
+
+  /* 이름 + 굵기/기울임 → 실제로 쓸 글꼴 파일.
+     굵은 모양이 따로 없으면 보통 모양을 쓰고 synthBold 로 굵게 그리게 한다. */
+  async function face(name, bold, italic) {
+    var fam = family(name);
+    if (!fam) return null;
+    var F = fam.faces;
+    var pick = F[faceKey(bold, italic)];
+    if (!pick && bold && italic) pick = F.b || F.i;
+    if (!pick) pick = F.r || F.b || F.i || F.bi;
+    if (!pick) return null;
+    var hasB = pick === F.b || pick === F.bi;
+    var hasI = pick === F.i || pick === F.bi;
+    if (!pick.bytes && pick.load) pick.bytes = await pick.load();
+    return {
+      id: pick,                        // 같은 파일이면 한 번만 심는다
+      bytes: pick.bytes,
+      ps: pick.ps,
+      synthBold: bold && !hasB,
+      synthItalic: italic && !hasI
+    };
+  }
+
+  global.NoteFonts = {
+    addEmbedded: addEmbedded,
+    addFile: addFile,
+    loadLocal: loadLocal,
+    localGranted: localGranted,
+    localSupported: localSupported,
+    localState: function () { return localState; },
+    sourceOf: sourceOf,
+    face: face,
+    canon: canon
   };
 })(window);
 
@@ -1472,37 +2474,62 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     );
   }
 
-  function wrapText(text, maxW, size, widthOf) {
+  /* ------------------------------------------------------------------ *
+   * 글자 배열 줄바꿈
+   *
+   * 글자는 { c, f(글꼴), st(서식) } 이다. 글꼴마다 폭이 달라서 글자열이 아니라
+   * 글자 배열로 잰다. '\n' 은 문단 안 줄바꿈(Word 의 Shift+Enter)이다.
+   *   word  낱말(어절) 경계에서만 끊는다. 한 낱말이 한 줄보다 길 때만 글자 중간에서 자른다.
+   *   char  한글·한자는 아무 글자 사이에서나 끊고, 라틴 낱말은 되도록 지킨다.
+   * ------------------------------------------------------------------ */
+  var RE_CJK_BREAK = /[가-힣぀-ヿ一-鿿]/;
+
+  function trimEnd(chars) {
+    var e = chars.length;
+    while (e > 0 && chars[e - 1].c === ' ') e--;
+    return chars.slice(0, e);
+  }
+
+  function wrapChars(chars, maxW, size, mode) {
     var out = [];
-    var n = text.length;
-    if (!n) return out;
+    var n = chars.length;
     var unit = maxW / size;          // size=1 기준 폭으로 비교
     var i = 0;
     var guardTotal = 0;
     while (i < n && guardTotal++ < 100000) {
-      var w = 0, j = i, lastSpace = -1;
+      var w = 0, j = i, lastSpace = -1, hard = false;
       while (j < n) {
-        var cw = widthOf(text.charAt(j));
+        var ch = chars[j];
+        if (ch.c === '\n') { hard = true; break; }
+        var cw = ch.f.w(ch.c);
         if (w + cw > unit && j > i) break;
-        if (text.charAt(j) === ' ') lastSpace = j;
+        if (ch.c === ' ') lastSpace = j;
         w += cw;
         j++;
       }
-      if (j >= n) { out.push(text.slice(i).replace(/\s+$/, '')); break; }
+      if (hard || j >= n) {
+        out.push(trimEnd(chars.slice(i, j)));
+        i = hard ? j + 1 : j;
+        continue;
+      }
 
       var brk = j;
-      // 라틴 문자 사이면 낱말 경계에서 끊는다
-      if (lastSpace > i && !/[가-힣぀-ヿ一-鿿]/.test(text.charAt(brk))) {
+      var midWord = true;
+      if (mode === 'word') {
+        if (chars[j].c === ' ') { brk = j; midWord = false; }
+        else if (lastSpace > i) { brk = lastSpace + 1; midWord = false; }
+      } else if (lastSpace > i && !RE_CJK_BREAK.test(chars[brk].c)) {
+        // 라틴 문자 사이면 낱말 경계에서 끊는다
         if (brk - lastSpace < (brk - i) * 0.4) brk = lastSpace + 1;
       }
       var guard = 0;
-      while (guard++ < 3 && brk > i + 1 &&
-             (NO_START.indexOf(text.charAt(brk)) >= 0 || NO_END.indexOf(text.charAt(brk - 1)) >= 0)) {
+      while (midWord && guard++ < 3 && brk > i + 1 &&
+             (NO_START.indexOf(chars[brk].c) >= 0 || NO_END.indexOf(chars[brk - 1].c) >= 0)) {
         brk--;
       }
-      out.push(text.slice(i, brk).replace(/\s+$/, ''));
+      out.push(trimEnd(chars.slice(i, brk)));
       i = brk;
-      while (i < n && text.charAt(i) === ' ') i++;
+      while (i < n && chars[i].c === ' ') i++;
     }
     return out.filter(function (s) { return s.length > 0; });
   }
@@ -1510,7 +2537,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
   /* ------------------------------------------------------------------ *
    * 한 슬라이드의 필기 → 조판 단위(atom)
    * ------------------------------------------------------------------ */
-  function bodyAtoms(cfg, slideNo, bySlide, widthOf, textW) {
+  function bodyAtoms(cfg, slideNo, bySlide, typo, textW) {
     var size = cfg.fontSize;
     var lineH = size * cfg.lineSpacing;
     var atoms = [];
@@ -1521,8 +2548,8 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
         atoms.push({ kind: 'source', text: '— ' + entry.file, size: size - 1, h: lineH });
       }
       entry.paragraphs.forEach(function (para, pi) {
-        wrapText(sanitize(para), textW, size, widthOf).forEach(function (ln) {
-          atoms.push({ kind: 'line', text: ln, size: size, h: lineH });
+        wrapChars(typo.shape(para), textW, size, cfg.wrapMode).forEach(function (ln) {
+          atoms.push({ kind: 'line', chars: ln, size: size, h: lineH });
         });
         var last = (ei === entries.length - 1) && (pi === entry.paragraphs.length - 1);
         if (!last && cfg.paraGap > 0) atoms.push({ kind: 'gap', h: lineH * cfg.paraGap });
@@ -1551,6 +2578,189 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
   }
 
   /* ------------------------------------------------------------------ *
+   * 글꼴
+   * ------------------------------------------------------------------ */
+  /* .ttc(글꼴 모음) 파일은 그 안의 어느 글꼴인지 postscript 이름으로 골라야 한다.
+     pdf-lib 는 fontkit.create(bytes) 만 부르므로 사이에 끼어 골라 준다. */
+  var pendingPs = null;
+  function collectionAware(fk) {
+    return {
+      create: function (buf) {
+        var isTtc = buf && buf[0] === 0x74 && buf[1] === 0x74 && buf[2] === 0x63 && buf[3] === 0x66;
+        if (!isTtc) return fk.create(buf);
+        var all = fk.create(buf);
+        var one = pendingPs && all.getFont ? all.getFont(pendingPs) : null;
+        return one || all.fonts[0];
+      }
+    };
+  }
+
+  function fontkitOf(pdfFont) {
+    try { return pdfFont.embedder.font; } catch (e) { return null; }
+  }
+
+  /* 그리기에 쓰는 글꼴 한 벌: PDF 글꼴 + 폭 재기 + 글자 유무 + 가짜 굵게/기울임 */
+  function makeFace(pdfFont, synthB, synthI) {
+    var fk = fontkitOf(pdfFont);
+    var has = Object.create(null);
+    return {
+      pdf: pdfFont,
+      w: makeMeasurer(pdfFont),
+      synthB: !!synthB,
+      synthI: !!synthI,
+      has: function (ch) {
+        var ok = has[ch];
+        if (ok === undefined) {
+          try { ok = !fk || !!fk.hasGlyphForCodePoint(ch.codePointAt(0)); }
+          catch (e) { ok = true; }
+          has[ch] = ok;
+        }
+        return ok;
+      }
+    };
+  }
+
+  var hexCache = Object.create(null);
+  function hexColor(h) {
+    if (!h) return null;
+    if (!hexCache[h]) {
+      var n = parseInt(h, 16);
+      hexCache[h] = global.PDFLib.rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
+    }
+    return hexCache[h];
+  }
+
+  var RE_DROP = /[\uD800-\uDFFF\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
+
+  /* 문단 → 글자 배열. 글자마다 어느 글꼴로 그릴지 여기서 정한다.
+     문단은 글자열(PDF 전사본)이거나 { text, runs:[{t, st}] }(Word 전사본)다. */
+  function Typesetter(baseFont, docFaces) {
+    var plain = makeFace(baseFont, false, false);
+    var bases = Object.create(null);
+    function baseFace(b, i) {
+      if (!b && !i) return plain;
+      var k = (b ? 'b' : '') + (i ? 'i' : '');
+      return bases[k] || (bases[k] = makeFace(baseFont, b, i));
+    }
+
+    function pick(ch, st) {
+      if (!st) return plain.has(ch) ? plain : null;
+      // 이 글자의 글꼴 → 같은 서식의 다른 글꼴 → 기본 글꼴 순으로 글자가 있는 것을 쓴다
+      var names = [global.NoteDocx.fontFor(ch, st), st.fe, st.fa, st.fh];
+      for (var k = 0; k < names.length; k++) {
+        var f = names[k] && docFaces.get(faceKey(names[k], st.b, st.i));
+        if (f && f.has(ch)) return f;
+      }
+      var bf = baseFace(st.b, st.i);
+      return bf.has(ch) ? bf : null;
+    }
+
+    function shape(para) {
+      var runs = typeof para === 'string' ? [{ t: para, st: null }] : para.runs;
+      var out = [];
+      for (var r = 0; r < runs.length; r++) {
+        var t = runs[r].t, st = runs[r].st;
+        for (var i = 0; i < t.length; i++) {
+          var ch = t.charAt(i);
+          if (ch === '\n') { out.push({ c: '\n' }); continue; }
+          if (ch === '\t' || ch === '\r') ch = ' ';
+          if (RE_DROP.test(ch)) continue;
+          var f = pick(ch, st);
+          if (f) out.push({ c: ch, f: f, st: st });   // 어느 글꼴에도 없는 글자는 뺀다
+        }
+      }
+      return out;
+    }
+
+    return { shape: shape };
+  }
+
+  function faceKey(name, b, i) { return name + '|' + (b ? 1 : 0) + (i ? 1 : 0); }
+
+  /* Word 전사본에 쓰인 글꼴(이름 × 굵기 × 기울임)을 찾아 미리 심어 둔다.
+     실제로 그 글꼴로 그려질 글자가 있는 조합만 심는다. */
+  async function embedDocFaces(doc, cfg) {
+    var faces = new Map();
+    if (!cfg.fontFace || !global.NoteDocx) return faces;
+    var need = new Map();
+    cfg.slides.forEach(function (no) {
+      (cfg.bySlide.get(no) || []).forEach(function (entry) {
+        entry.paragraphs.forEach(function (p) {
+          if (typeof p === 'string') return;
+          p.runs.forEach(function (r) {
+            if (!r.st) return;
+            for (var i = 0; i < r.t.length; i++) {
+              var nm = global.NoteDocx.fontFor(r.t.charAt(i), r.st);
+              if (nm) need.set(faceKey(nm, r.st.b, r.st.i), { name: nm, b: r.st.b, i: r.st.i });
+            }
+          });
+        });
+      });
+    });
+
+    var embedded = new Map();       // 같은 글꼴 파일은 한 번만 심는다
+    for (var pair of need) {
+      var key = pair[0], want = pair[1];
+      var found = null;
+      try { found = await cfg.fontFace(want.name, want.b, want.i); }
+      catch (e) { console.warn('글꼴을 읽지 못했습니다:', want.name, e); }
+      if (!found || !found.bytes) continue;
+      var pdfFont = embedded.get(found.id);
+      if (pdfFont === undefined) {
+        pendingPs = found.ps || null;
+        try { pdfFont = await doc.embedFont(found.bytes, { subset: true }); }
+        catch (e) { console.warn('글꼴을 심지 못했습니다:', want.name, e); pdfFont = null; }
+        pendingPs = null;
+        embedded.set(found.id, pdfFont);
+      }
+      if (pdfFont) faces.set(key, makeFace(pdfFont, found.synthBold, found.synthItalic));
+    }
+    return faces;
+  }
+
+  /* 글자 한 덩어리(같은 글꼴·서식)를 그린다. 형광펜 → 글자 → 밑줄·취소선 순. */
+  function drawSegment(page, text, x, y, s, face, st) {
+    var PDFLib = global.PDFLib;
+    var color = (st && hexColor(st.color)) || INK;
+    var w = face.pdf.widthOfTextAtSize(text, s);
+    if (st && st.hl) {
+      page.drawRectangle({ x: x, y: y - s * 0.28, width: w, height: s * 1.22, color: hexColor(st.hl) });
+    }
+    var opts = { x: x, y: y, size: s, font: face.pdf, color: color };
+    if (face.synthI) opts.ySkew = PDFLib.degrees(12);     // 기울인 모양이 없는 글꼴
+    if (face.synthB) {                                     // 굵은 모양이 없는 글꼴 — 외곽선을 덧그린다
+      page.pushOperators(
+        PDFLib.pushGraphicsState(),
+        PDFLib.setTextRenderingMode(PDFLib.TextRenderingMode.FillAndOutline),
+        PDFLib.setLineWidth(s * 0.035),
+        PDFLib.setStrokingColor(color)
+      );
+    }
+    page.drawText(text, opts);
+    if (face.synthB) page.pushOperators(PDFLib.popGraphicsState());
+    if (st && st.u) {
+      page.drawLine({ start: { x: x, y: y - s * 0.13 }, end: { x: x + w, y: y - s * 0.13 },
+                      thickness: s * 0.055, color: color });
+    }
+    if (st && st.strike) {
+      page.drawLine({ start: { x: x, y: y + s * 0.3 }, end: { x: x + w, y: y + s * 0.3 },
+                      thickness: s * 0.055, color: color });
+    }
+    return w;
+  }
+
+  function drawChars(page, chars, x, y, s) {
+    var k = 0;
+    while (k < chars.length) {
+      var f = chars[k].f, st = chars[k].st, text = '';
+      var m = k;
+      while (m < chars.length && chars[m].f === f && chars[m].st === st) text += chars[m++].c;
+      x += drawSegment(page, text, x, y, s, f, st);
+      k = m;
+    }
+  }
+
+  /* ------------------------------------------------------------------ *
    * 본체
    * ------------------------------------------------------------------ */
   async function build(cfg, hooks) {
@@ -1566,10 +2776,10 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     RULE = rgb(0.85, 0.89, 0.96);
 
     var doc = await PDFLib.PDFDocument.create();
-    doc.registerFontkit(global.fontkit);
+    doc.registerFontkit(collectionAware(global.fontkit));
     var font = await doc.embedFont(cfg.fontBytes, { subset: true });
-    var widthOf = makeMeasurer(font);
     glyphFilter = makeGlyphFilter(font);
+    var typo = Typesetter(font, await embedDocFaces(doc, cfg));
 
     doc.setTitle('강의노트');
     doc.setCreator('강의노트 합치기');
@@ -1662,6 +2872,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
       var s = atom.size || size;
       var lh = s === size ? lineH : s * cfg.lineSpacing;
       var baseline = top - (atom.pad || 0) - lh / 2 - s * 0.34;
+      if (atom.kind === 'line') { drawChars(page, atom.chars, rightX, baseline, s); return; }
       var color = atom.kind === 'header' ? ACCENT
                 : (atom.kind === 'source') ? MUTED : INK;
       page.drawText(sanitize(atom.text), {
@@ -1693,7 +2904,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
       for (var i = 0; i < cfg.slides.length; i++) {
         var no = cfg.slides[i];
         await ensureImage(no);
-        var atoms = bodyAtoms(cfg, no, cfg.bySlide, widthOf, rightW);
+        var atoms = bodyAtoms(cfg, no, cfg.bySlide, typo, rightW);
         var chunks = packInto(atoms, slotH - headH);
         if (!chunks.length) chunks = [[]];          // 필기 없는 슬라이드 → 빈칸
         for (var c = 0; c < chunks.length; c++) {
@@ -1741,7 +2952,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
             hd.h = headH + (si === 0 ? 0 : lineH * 0.35);
             atoms.push(hd);
           }
-          atoms = atoms.concat(bodyAtoms(cfg, no, cfg.bySlide, widthOf, rightW));
+          atoms = atoms.concat(bodyAtoms(cfg, no, cfg.bySlide, typo, rightW));
         });
 
         var chunks = packInto(atoms, bodyH);
@@ -1849,7 +3060,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
    * ------------------------------------------------------------------ */
   var state = {
     deck: null,      // {name, size, pdf}
-    notes: [],       // [{name, size, pdf, doc, result}]
+    notes: [],       // [{name, size, kind, pdf, doc, result}] — kind: 'pdf' | 'docx'
     merged: null,    // Map<slide, entries>
     slides: [],
     made: null,      // {blob, name, pages}
@@ -1863,18 +3074,19 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     fontSize: 9, lineSpacing: 1.45, paraGap: 0.5, margin: 10,
     slidesPer: 2, quality: 150, orient: 'landscape', splitRatio: 50,
     colGap: 5, slideGap: 5, offset: 0, joinMode: 'auto', imgFormat: 'jpeg',
-    layoutMode: 'aligned',
+    layoutMode: 'aligned', wrapMode: 'word',
     fileName: '강의노트.pdf',
     showHeader: true, showPageNo: true, slideBorder: true, divider: false,
-    showSource: false, allowJang: false, allowBare: false, skipEmpty: false
+    showSource: false, allowJang: false, allowBare: false, skipEmpty: false,
+    docStyle: true
   };
 
   var NUMERIC = ['fontSize', 'lineSpacing', 'paraGap', 'margin', 'slidesPer',
                  'quality', 'splitRatio', 'colGap', 'slideGap', 'offset'];
-  var TEXTY = ['orient', 'joinMode', 'imgFormat', 'fileName', 'layoutMode'];
+  var TEXTY = ['orient', 'joinMode', 'imgFormat', 'fileName', 'layoutMode', 'wrapMode'];
   var FLAGS = ['showHeader', 'showPageNo', 'slideBorder', 'divider',
-               'showSource', 'allowJang', 'allowBare', 'skipEmpty'];
-  var REPARSE = ['joinMode', 'allowJang', 'allowBare', 'offset', 'skipEmpty'];
+               'showSource', 'allowJang', 'allowBare', 'skipEmpty', 'docStyle'];
+  var REPARSE = ['joinMode', 'allowJang', 'allowBare', 'offset', 'skipEmpty', 'docStyle'];
 
   function readSettings() {
     var s = {};
@@ -1918,10 +3130,18 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
   /* ------------------------------------------------------------------ *
    * 파일 입력
    * ------------------------------------------------------------------ */
-  function makeInput(multiple, onPick) {
+  var ACCEPT_PDF = 'application/pdf,.pdf';
+  var ACCEPT_NOTES = ACCEPT_PDF + ',.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  var ACCEPT_FONT = '.ttf,.otf,.ttc,font/ttf,font/otf,font/collection';
+
+  function isPdf(f) { return /\.pdf$/i.test(f.name) || f.type === 'application/pdf'; }
+  function isWord(f) { return /\.docx?$/i.test(f.name) || /wordprocessingml/.test(f.type); }
+  function isFont(f) { return /\.(ttf|otf|ttc)$/i.test(f.name); }
+
+  function makeInput(multiple, onPick, accept) {
     var inp = document.createElement('input');
     inp.type = 'file';
-    inp.accept = 'application/pdf,.pdf';
+    inp.accept = accept || ACCEPT_PDF;
     inp.multiple = !!multiple;
     inp.style.position = 'fixed';
     inp.style.left = '-9999px';
@@ -1936,7 +3156,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     return inp;
   }
 
-  function wireDrop(zone, input, onPick) {
+  function wireDrop(zone, input, onPick, accepts) {
     zone.addEventListener('click', function () { if (!state.busy) input.click(); });
     ['dragenter', 'dragover'].forEach(function (ev) {
       zone.addEventListener(ev, function (e) {
@@ -1952,8 +3172,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     });
     zone.addEventListener('drop', function (e) {
       if (state.busy) return;
-      var files = Array.prototype.slice.call(e.dataTransfer.files || [])
-        .filter(function (f) { return /\.pdf$/i.test(f.name) || f.type === 'application/pdf'; });
+      var files = Array.prototype.slice.call(e.dataTransfer.files || []).filter(accepts);
       if (files.length) onPick(files);
     });
   }
@@ -2014,6 +3233,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
       var meta = !n.result ? '읽는 중…'
                : found ? found + '장 인식'
                : '페이지 표시 없음';
+      if (n.kind === 'docx') meta = 'Word · ' + meta;
       if (n.result && !found) li.setAttribute('data-status', 'bad');
       li.innerHTML =
         '<span class="idx">' + (i + 1) + '</span><span class="nm"></span>' +
@@ -2053,9 +3273,11 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     var s = readSettings();
     state.notes.forEach(function (n) {
       if (!n.doc) return;
-      n.result = window.NoteParse.analyzeFile(n.doc, n.name, {
-        allowJang: s.allowJang, allowBare: s.allowBare, joinMode: s.joinMode
-      });
+      var opts = { allowJang: s.allowJang, allowBare: s.allowBare, joinMode: s.joinMode,
+                   plain: !s.docStyle };
+      n.result = n.kind === 'docx'
+        ? window.NoteParse.analyzeDocx(n.doc, n.name, opts)
+        : window.NoteParse.analyzeFile(n.doc, n.name, opts);
     });
     var results = state.notes.filter(function (n) { return n.result; })
                              .map(function (n) { return n.result; });
@@ -2075,6 +3297,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     state.slides = slides;
 
     renderLists();
+    renderFonts();
     updateSummary();
   }
 
@@ -2099,7 +3322,8 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
       entries.forEach(function (e) {
         if (s.showSource) lines += 1;
         e.paragraphs.forEach(function (p) {
-          lines += Math.ceil(p.length / perLine) + s.paraGap;
+          var len = typeof p === 'string' ? p.length : p.text.length;
+          lines += Math.ceil(len / perLine) + s.paraGap;
         });
       });
       return lines;
@@ -2137,12 +3361,13 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     state.notes.forEach(function (n) {
       if (!n.result) return;
       if (n.result.charCount < 20) {
-        warn.push('<b>' + esc(n.name) + '</b> — 글자를 하나도 읽지 못했습니다. 스캔한 그림으로만 된 PDF로 보입니다.');
+        warn.push('<b>' + esc(n.name) + '</b> — 글자를 하나도 읽지 못했습니다. ' +
+                  (n.kind === 'docx' ? '본문이 비어 있는 Word 문서입니다.' : '스캔한 그림으로만 된 PDF로 보입니다.'));
       } else if (!n.result.slides.length) {
         warn.push('<b>' + esc(n.name) + '</b> — <code>Page 3</code> 같은 페이지 표시를 찾지 못했습니다. 고급 설정에서 인식 방식을 바꿔 보세요.');
-      } else if (n.result.charsDropped > 0) {
+      } else if (n.result.charsDropped >= 50) {   // 표지 제목 한 줄 정도는 알리지 않는다
         warn.push('<b>' + esc(n.name) + '</b> — 첫 페이지 표시 앞의 글 ' +
-                  n.result.charsDropped + '자는 어느 슬라이드에도 넣지 않았습니다.');
+                  n.result.charsDropped.toLocaleString() + '자는 어느 슬라이드에도 넣지 않았습니다.');
       }
     });
 
@@ -2187,7 +3412,7 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
 
     if (state.busy) return;
     if (!state.deck) setStatus('강의자료 PDF를 넣어주세요.');
-    else if (!state.notes.length) setStatus('전사 필기 PDF를 넣어주세요.');
+    else if (!state.notes.length) setStatus('전사 필기(PDF 또는 Word)를 넣어주세요.');
     else if (!state.slides.length) setStatus('짝지을 슬라이드를 찾지 못했습니다.');
     else setStatus('준비되었습니다. 슬라이드 ' + state.slides.length + '장.');
   }
@@ -2219,21 +3444,31 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
   }
 
   async function onNotes(files) {
+    var fonts = files.filter(isFont);
+    if (fonts.length) await onFontFiles(fonts);
+    files = files.filter(function (f) { return !isFont(f); });
     for (var i = 0; i < files.length; i++) {
       var file = files[i];
       var dup = state.notes.some(function (n) {
         return n.name === file.name && n.size === file.size;
       });
       if (dup) continue;
-      var entry = { name: file.name, size: file.size, pdf: null, doc: null, result: null };
+      var kind = isWord(file) ? 'docx' : 'pdf';
+      var entry = { name: file.name, size: file.size, kind: kind, pdf: null, doc: null, result: null };
       state.notes.push(entry);
       renderLists();
       setStatus(file.name + ' 읽는 중…');
       try {
-        entry.pdf = await openPdf(await readFile(file));
-        entry.doc = await window.NoteParse.extractDoc(entry.pdf, function (p, total) {
-          setStatus(file.name + ' 읽는 중… ' + p + '/' + total + '쪽');
-        });
+        if (kind === 'docx') {
+          entry.doc = await window.NoteDocx.extract(await readFile(file));
+          window.NoteFonts.addEmbedded(entry.doc.fonts);
+          autoLocalFonts();
+        } else {
+          entry.pdf = await openPdf(await readFile(file));
+          entry.doc = await window.NoteParse.extractDoc(entry.pdf, function (p, total) {
+            setStatus(file.name + ' 읽는 중… ' + p + '/' + total + '쪽');
+          });
+        }
       } catch (e) {
         entry.result = { file: file.name, bySlide: new Map(), slides: [], charCount: 0,
                          charsDropped: 0, markerCount: 0, droppedMarkers: 0, pageCount: 0 };
@@ -2241,6 +3476,109 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
       }
     }
     doRecompute();
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Word 전사본 글꼴
+   *
+   * docx 에는 보통 글꼴 이름만 적혀 있다. 이 컴퓨터에 설치된 글꼴을 읽거나
+   * (크롬·엣지) 사용자가 글꼴 파일을 넣어 주면 그 글꼴로 PDF를 만든다.
+   * ------------------------------------------------------------------ */
+  var inpFont = null;
+  var fontMsg = '';
+
+  var SOURCE_LABEL = {
+    file: '넣은 글꼴 파일',
+    embedded: '문서에 들어 있음',
+    local: '이 컴퓨터에 있음'
+  };
+
+  function fontUsage() {
+    var usage = Object.create(null);
+    state.notes.forEach(function (n) {
+      if (n.kind !== 'docx' || !n.doc) return;
+      Object.keys(n.doc.usage).forEach(function (name) {
+        usage[name] = (usage[name] || 0) + n.doc.usage[name];
+      });
+    });
+    return Object.keys(usage).map(function (name) { return { name: name, chars: usage[name] }; })
+                 .sort(function (a, b) { return b.chars - a.chars; });
+  }
+
+  function renderFonts() {
+    var box = $('fontBox');
+    var used = readSettings().docStyle ? fontUsage() : [];
+    if (!used.length) { box.hidden = true; box.innerHTML = ''; return; }
+    box.hidden = false;
+    var F = window.NoteFonts;
+    var missing = 0;
+    var rows = used.map(function (u) {
+      var src = F.sourceOf(u.name);
+      if (!src) missing++;
+      return '<li' + (src ? '' : ' data-status="miss"') + '>' +
+        '<span class="nm">' + esc(u.name) + '</span>' +
+        '<span class="meta">' + u.chars.toLocaleString() + '자</span>' +
+        '<span class="src">' + (src ? SOURCE_LABEL[src] : '없음 — 기본 글꼴로 대신') + '</span></li>';
+    }).join('');
+
+    var local = F.localState();
+    var hint = '';
+    if (missing) {
+      if (!F.localSupported()) {
+        hint = '이 브라우저는 컴퓨터에 설치된 글꼴을 읽지 못합니다. 크롬이나 엣지에서 열거나, 글꼴 파일을 직접 넣어 주세요.';
+      } else if (local === 'denied') {
+        hint = '글꼴 읽기가 허용되지 않았습니다. 주소창 왼쪽의 사이트 설정에서 <b>글꼴</b>을 허용하거나, 글꼴 파일을 직접 넣어 주세요.';
+      } else if (local === 'done') {
+        hint = '이 컴퓨터에 없는 글꼴입니다. 글꼴 파일(.ttf · .otf · .ttc)이 있으면 넣어 주세요.';
+      } else {
+        hint = '<b>이 컴퓨터 글꼴 쓰기</b>를 누르면 브라우저가 글꼴 읽기 허락을 물어봅니다.';
+      }
+      hint += ' 없는 글꼴은 기본 글꼴(Noto Sans KR)로 대신합니다.';
+    }
+    var canLocal = missing && F.localSupported() && local !== 'done' && local !== 'loading';
+
+    box.innerHTML =
+      '<div class="fb-head"><span class="fb-title">Word 글꼴</span>' +
+      '<span class="caption">굵기·색·밑줄과 함께 이 글꼴 그대로 넣습니다</span></div>' +
+      '<ul class="fonts">' + rows + '</ul>' +
+      '<div class="fb-actions">' +
+      (canLocal ? '<button class="btn btn-pearl" id="btnLocalFonts">이 컴퓨터 글꼴 쓰기</button>' : '') +
+      '<button class="btn btn-pearl" id="btnFontFile">글꼴 파일 넣기</button></div>' +
+      (fontMsg ? '<p class="fine fb-msg">' + fontMsg + '</p>' : '') +
+      (hint ? '<p class="fine">' + hint + '</p>' : '');
+
+    var bl = $('btnLocalFonts');
+    if (bl) bl.addEventListener('click', useLocalFonts);
+    $('btnFontFile').addEventListener('click', function () { if (inpFont) inpFont.click(); });
+  }
+
+  /* 허락 창이 뜨므로 반드시 버튼 클릭 안에서 부른다 */
+  async function useLocalFonts() {
+    fontMsg = '';
+    var p = window.NoteFonts.loadLocal();
+    renderFonts();
+    await p;
+    renderFonts();
+    updateSummary();
+  }
+
+  /* 이미 허락받은 적이 있으면 묻지 않고 바로 읽는다 */
+  async function autoLocalFonts() {
+    var F = window.NoteFonts;
+    if (F.localState() || !(await F.localGranted())) return;
+    await F.loadLocal();
+    renderFonts();
+  }
+
+  async function onFontFiles(files) {
+    var added = [], bad = [];
+    for (var i = 0; i < files.length; i++) {
+      try { added = added.concat(window.NoteFonts.addFile(await readFile(files[i]))); }
+      catch (e) { bad.push(files[i].name); }
+    }
+    fontMsg = (added.length ? '글꼴을 넣었습니다: ' + esc(added.join(', ')) + '. ' : '') +
+              (bad.length ? '글꼴로 읽지 못한 파일: ' + esc(bad.join(', ')) : '');
+    renderFonts();
   }
 
   /* ------------------------------------------------------------------ *
@@ -2373,6 +3711,8 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
         slideBorder: s.slideBorder,
         divider: s.divider,
         layoutMode: s.layoutMode,
+        wrapMode: s.wrapMode,
+        fontFace: s.docStyle ? window.NoteFonts.face : null,
         dpi: s.quality,
         imgFormat: s.imgFormat
       }, {
@@ -2423,9 +3763,12 @@ window.__ASSETS={"font":"AAEAAAATAQAABAAwQkFTRcsDSZsAAAK4AAAA8EdERUYAGQECAAABTAA
     }
 
     var inpDeck = makeInput(false, onDeck);
-    var inpNotes = makeInput(true, onNotes);
-    wireDrop($('dropDeck'), inpDeck, onDeck);
-    wireDrop($('dropNotes'), inpNotes, onNotes);
+    var inpNotes = makeInput(true, onNotes, ACCEPT_NOTES);
+    inpFont = makeInput(true, onFontFiles, ACCEPT_FONT);
+    wireDrop($('dropDeck'), inpDeck, onDeck, isPdf);
+    wireDrop($('dropNotes'), inpNotes, onNotes, function (f) {
+      return isPdf(f) || isWord(f) || isFont(f);
+    });
 
     $('btnStart').addEventListener('click', function () {
       $('files').scrollIntoView({ behavior: 'smooth', block: 'start' });
