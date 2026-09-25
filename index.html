@@ -471,31 +471,11 @@ details.adv .card + .card { margin-top: var(--md); }
 #aiBody { margin-top: var(--lg); padding-top: var(--lg); border-top: 1px solid var(--divider-soft); }
 .ai-keynote { margin: var(--md) 0 0; }
 
-/* 정리 방식 — 두 갈래 선택 */
-.seg { display: grid; grid-template-columns: 1fr 1fr; gap: var(--xs); }
-.seg label { cursor: pointer; }
-.seg input { position: absolute; opacity: 0; pointer-events: none; }
-.seg span {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 12px;
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-md);
-  background: var(--canvas);
-  transition: border-color .15s, background .15s;
-}
-.seg b { font-size: 14px; font-weight: 600; letter-spacing: -0.224px; }
-.seg i { font-style: normal; font-size: 12px; color: var(--ink-muted-48); }
-.seg input:checked + span { border-color: var(--primary); background: #f0f6ff; }
-.seg input:checked + span b { color: var(--primary); }
-.seg input:focus-visible + span { outline: 2px solid var(--primary-focus); outline-offset: 1px; }
-
 /* 모델 고르기 — 줄마다 예상 비용 */
 .ai-models { margin-top: var(--lg); display: flex; flex-direction: column; gap: 6px; }
 .ai-model {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) minmax(0, auto) 92px 92px;
+  grid-template-columns: 18px minmax(0, 1fr) minmax(0, auto) 92px;
   align-items: center;
   gap: var(--sm);
   padding: 10px 14px;
@@ -521,11 +501,8 @@ details.adv .card + .card { margin-top: var(--md); }
 .ai-model .who b { font-weight: 600; }
 .ai-model .who i { font-style: normal; font-size: 12px; color: var(--ink-muted-48); }
 .ai-model .tok { color: var(--ink-muted-48); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
-.ai-model .usd { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-muted-48); }
-.ai-models.mode-now .usd.now,
-.ai-models.mode-batch .usd.batch { color: var(--ink); font-weight: 600; }
-.ai-models.mode-now .head .usd.now,
-.ai-models.mode-batch .head .usd.batch { color: var(--primary); }
+.ai-model .usd { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
+.ai-model.head .usd { color: var(--ink-muted-48); font-weight: 400; }
 #aiModelsNote { margin: var(--xs) 0 0; }
 
 .ai-actions { display: flex; flex-wrap: wrap; gap: var(--xs); margin-top: var(--lg); align-items: center; }
@@ -546,19 +523,6 @@ details.adv .card + .card { margin-top: var(--md); }
 .ai-live .bar { max-width: none; margin: var(--xs) 0; }
 .bar.light { background: rgba(0, 0, 0, 0.08); }
 .bar.light > i { background: var(--primary); }
-
-/* 모아서 맡긴 정리 */
-.ai-jobs-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sm); margin-top: var(--lg); }
-.ai-jobs-head .fb-title { font-size: 14px; font-weight: 600; letter-spacing: -0.224px; }
-.ai-jobs { margin-top: var(--xs); }
-.ai-jobs li { flex-wrap: wrap; }
-.ai-jobs li .nm { flex: 1 1 160px; }
-.ai-jobs .st { flex: none; font-size: 12px; max-width: 100%; }
-.ai-jobs .st.ok { color: #2f7a47; }
-.ai-jobs .st.wait { color: #9a6b12; }
-.ai-jobs .st.bad { color: #b3261e; }
-.ai-jobs .btn-pearl { padding: 4px 10px; font-size: 13px; border-width: 2px; }
-.ai-jobs + .fine { margin: var(--xs) 0 0; }
 
 /* 키 확인 */
 .ai-keystate { font-size: 12px; letter-spacing: -0.12px; color: var(--ink-muted-48); min-height: 1.4em; }
@@ -647,6 +611,8 @@ details.ai-preview[open] > summary::after { content: " ⌃"; }
 .ai-notes .mk { background: #fff1b0; font-weight: 600; border-radius: 2px; }
 .ai-notes .b { font-weight: 600; }
 .ai-notes .uc { color: #8a8f98; }
+.ai-notes .ex { color: #d32f2f; font-weight: 600; }
+.ai-notes .sk { color: #a3a8af; }
 .ai-notes table { border-collapse: collapse; width: 100%; }
 .ai-notes th, .ai-notes td { border: 1px solid var(--hairline); padding: 3px 6px; text-align: left; vertical-align: top; }
 .ai-notes th { background: #f1f3f7; font-weight: 600; }
@@ -718,11 +684,9 @@ footer.site .legal { color: var(--ink-muted-48); }
   h1.hero { font-size: 34px; }
   h2.display { font-size: 30px; }
   p.lead { font-size: 21px; }
-  /* 모델 줄 — 고른 방식의 값만 보이고 토큰은 아래 줄로 */
+  /* 모델 줄 — 토큰은 아래 줄로 */
   .ai-model { grid-template-columns: 18px minmax(0, 1fr) auto; row-gap: 2px; }
   .ai-model .tok { grid-column: 2 / -1; grid-row: 2; text-align: left; }
-  .ai-models.mode-now .usd.batch,
-  .ai-models.mode-batch .usd.now { display: none; }
   .ai-model.head .tok { display: none; }
   /* 사용 내역 — 좁은 화면에선 토큰 칸을 뺀다 */
   .ai-history th:nth-child(5), .ai-history td:nth-child(5) { display: none; }
@@ -811,7 +775,8 @@ footer.site .legal { color: var(--ink-muted-48); }
     <div class="head-block">
       <h2 class="display">AI로 정리하기</h2>
       <p class="caption">원하면 전사본을 Claude 가 필기처럼 다시 정리해 오른쪽 칸에 넣습니다.
-        쪽마다 제목·요점·표로 나누고, 강의에서 강조한 곳은 굵게 칠하고, 맨 뒤에 전체 강의 요약을 붙입니다.
+        쪽마다 제목·요점·표로 나누고, 강의에서 강조한 곳은 굵게 칠합니다.
+        시험에 낸다·중요하다고 한 곳은 <b style="color:#d32f2f">빨간색</b>, 안 낸다고 한 곳은 <span style="color:#a3a8af">연한 회색</span>으로 표시합니다.
         Anthropic 으로는 <b>전사본 글자만</b> 보냅니다. 슬라이드는 보내지 않고, PDF를 만들 때는 AI를 부르지 않습니다.</p>
     </div>
 
@@ -826,15 +791,6 @@ footer.site .legal { color: var(--ink-muted-48); }
             <input type="password" id="aiKey" placeholder="sk-ant-api03-…" autocomplete="off" spellcheck="false">
             <span class="ai-keystate" id="aiKeyState"></span>
             <label class="check"><input type="checkbox" id="aiRemember"> 이 브라우저에 기억하기</label>
-          </div>
-          <div class="field">
-            <label>정리 방식</label>
-            <div class="seg">
-              <label><input type="radio" name="aiMode" value="now" checked>
-                <span><b>바로 보기</b><i>몇 분 · 정가</i></span></label>
-              <label><input type="radio" name="aiMode" value="batch">
-                <span><b>모아서 한 번에</b><i>보통 1시간 안 · 반값</i></span></label>
-            </div>
           </div>
           <div class="field">
             <label for="aiEffort">정리 꼼꼼함</label>
@@ -858,7 +814,6 @@ footer.site .legal { color: var(--ink-muted-48); }
         </div>
         <div id="aiStatus"></div>
         <div class="ai-spend" id="aiSpend" hidden></div>
-        <div id="aiJobs"></div>
         <details class="ai-preview" id="aiPreviewBox" hidden>
           <summary>정리본 미리보기</summary>
           <div class="ai-notes" id="aiPreview"></div>
@@ -3645,8 +3600,8 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 
    흐름
      1. 전사본을 <<<PAGE n>>> 표시로 나눈 글 하나로 만든다          transcriptText
-     2. 바로 보기 — 스트리밍으로 받으며 화면에 바로 보여 준다         runNow
-        모아서 한 번에 — Batch API 에 맡기고 나중에 결과를 받는다     submitBatch · checkBatch · batchResult
+     2. 스트리밍으로 받으며 화면에 바로 보여 준다                      runNow
+        (Batch API 는 브라우저에서 부를 수 없어 쓰지 않는다 — CORS 를 허용하지 않는다)
      3. 돌아온 글을 쪽별 문단(제목·목록·표·강조)으로 바꾼다            parseNotes
         조판은 layout.js 가 한다. */
 (function (global) {
@@ -3654,12 +3609,12 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 
   /* ------------------------------------------------------------------ *
    * 모델과 가격 — platform.claude.com/docs/en/about-claude/pricing (2026-09 확인)
-   *   input/output  100만 토큰당 달러. Batch 는 둘 다 절반.
+   *   input/output  100만 토큰당 달러.
    *   tok           같은 글의 토큰 수 배율. Claude 4.7 이후 모델의 새 토크나이저는
    *                 같은 글에서 토큰이 약 30% 더 나온다 (Haiku 4.5 는 예전 것).
    *   thinks        스스로 생각하는(adaptive thinking) 모델. 생각한 토큰도 출력 요금이다.
    *   effort        output_config.effort 로 생각의 양을 정할 수 있다 (Haiku 4.5 는 안 됨).
-   *   fallback      안전 분류기가 거절하면 서버가 다른 모델로 이어 쓰게 한다 (바로 보기만).
+   *   fallback      안전 분류기가 거절하면 서버가 다른 모델로 이어 쓰게 한다.
    * ------------------------------------------------------------------ */
   var MODELS = [
     { id: 'claude-fable-5-1', name: 'Claude Fable 5.1', note: '가장 뛰어난 모델 · 가장 비쌈',
@@ -3705,10 +3660,11 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
    *
    * 사용자가 준 지시문 그대로에, 마지막 "PDF로 내 달라"만 출력 형식으로 바꿨다.
    * PDF는 이 프로그램이 슬라이드 옆에 직접 조판하므로, 모델은 쪽 표시와 약속한
-   * 마크다운만 쓰면 된다. 지시문을 바꾸면 PROMPT_VERSION 을 올린다 — 이전 정리본을
-   * 다시 쓰지 않게 된다.
+   * 마크다운만 쓰면 된다. 전체 강의 요약은 빼고(v2), 시험에 낸다·안 낸다고 한 곳을
+   * <exam>·<noexam> 으로 표시하게 했다. 지시문을 바꾸면 PROMPT_VERSION 을 올린다 —
+   * 이전 정리본을 다시 쓰지 않게 된다.
    * ------------------------------------------------------------------ */
-  var PROMPT_VERSION = 'notes-v1';
+  var PROMPT_VERSION = 'notes-v2';
 
   var SYSTEM_PROMPT = [
     'You are given a page-separated lecture transcript as text. Use the transcript as the only source. Do not perform transcription or assume access to audio or slides.',
@@ -3719,22 +3675,24 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     '',
     'Preserve established medical and scientific terms in English, and keep technical notation, equations, variable names, drug names, anatomical names, and abbreviations unchanged. Exclude greetings, administrative chatter, filler, and unrelated digressions. Do not invent facts or explanations. Mark uncertain passages as [Unclear in transcript].',
     '',
-    'Use bold text and a subtle, readable color highlight only for points the instructor explicitly emphasizes or repeats. Highlight short phrases or sentences, not entire paragraphs, and avoid highlighting so much that the emphasis loses meaning. End with a Complete Lecture Summary that follows the full lecture’s logical flow. Before delivery, check every page against the transcript for omissions and incorrect page attribution.',
+    'Use bold text and a subtle, readable color highlight only for points the instructor explicitly emphasizes or repeats. Highlight short phrases or sentences, not entire paragraphs, and avoid highlighting so much that the emphasis loses meaning. Before delivery, check every page against the transcript for omissions and incorrect page attribution.',
+    '',
+    'Mark what the instructor says about the exam. When the instructor says a point will be on the exam or stresses that it is important to know (for example 시험에 낸다, 시험에 나온다, 꼭 외워라, 중요하다), wrap that point in `<exam>…</exam>`; it is shown in red. When the instructor says a point will not be on the exam or can be skipped (for example 시험에 안 낸다, 안 나온다, 그냥 참고만 해라), keep the point in the notes but wrap it in `<noexam>…</noexam>`; it is shown in light gray. Wrap the point the remark refers to, not only the remark itself. Mark only what the instructor actually said; do not guess what will be tested.',
     '',
     '# Output format',
     '',
     'A program reads your output, places each page’s notes next to that page’s slide, and typesets the PDF with page numbers itself. Follow this format exactly and output nothing else — no preamble and no closing remarks.',
     '',
     '- The transcript marks each page with a line `<<<PAGE n>>>`. For every page marker in the transcript, output the same marker line, in the same order, followed by that page’s notes. Output a page’s marker even when nothing substantive remains for it, and leave its notes empty.',
-    '- After the last page, output the line `<<<SUMMARY>>>` followed by the Complete Lecture Summary. Do not give it a title; the program adds one.',
     '- Inside the notes, use only this Markdown subset:',
     '  - `### ` at the start of a line for a heading (one level only; do not repeat the page number as a heading)',
     '  - `- ` for bullets, indenting nested bullets by two spaces per level (at most three levels)',
     '  - `1. ` for numbered steps',
     '  - tables as `| a | b |` rows with a `|---|---|` line after the header row; keep tables to a few short columns, because they must fit in half of a landscape A4 page',
-    '  - `==phrase==` for the bold color highlight on emphasized points. This is the only emphasis mark: do not use `**`, italics, or underline.',
+    '  - `==phrase==` for the bold color highlight on emphasized points. Apart from the exam tags below, this is the only emphasis mark: do not use `**`, italics, or underline.',
+    '  - `<exam>…</exam>` and `<noexam>…</noexam>` for the exam remarks described above. Open and close each tag on the same line; to mark several lines, wrap each line separately. A tag may wrap a whole bullet or line.',
     '  - plain lines for explanations',
-    '- Do not use code blocks, horizontal rules, HTML, links, images, or LaTeX. Write equations and symbols as plain text, for example `CO = HR × SV`, `Na+`, `CO2`.'
+    '- Do not use code blocks, horizontal rules, links, images, LaTeX, or any HTML other than the two exam tags. Write equations and symbols as plain text, for example `CO = HR × SV`, `Na+`, `CO2`.'
   ].join('\n');
 
   var USER_SUFFIX = 'Write the study notes for the transcript above, following the instructions and the output format exactly.';
@@ -3828,10 +3786,9 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
   // 생각에 쓰는 토큰 — 정리할 분량에 대한 비율 (어림)
   var THINK_RATIO = { low: 0.06, medium: 0.15, high: 0.3 };
 
-  /* 정리본은 전사본과 비슷한 길이다 — 군더더기는 빠지고 제목·목록 표시가 붙는다.
-     끝의 전체 요약은 전사본의 한 자릿수 % 쯤이다. */
+  /* 정리본은 전사본과 비슷한 길이다 — 군더더기는 빠지고 제목·목록 표시가 붙는다. */
   function outputTokens(transcriptTokens, m, effort) {
-    var visible = transcriptTokens * 0.9 + Math.min(4000, Math.max(400, transcriptTokens * 0.08));
+    var visible = transcriptTokens * 0.9;
     var thinking = m.thinks ? visible * (THINK_RATIO[effort] || THINK_RATIO.medium) : 0;
     return Math.round(visible + thinking);
   }
@@ -3848,13 +3805,12 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
       var known = exact && typeof exact[m.id] === 'number';
       var inTok = known ? exact[m.id] : Math.round(base * m.tok + frame);
       var outTok = outputTokens(Math.max(0, inTok - frame), m, effort);
-      var now = dollars(m, inTok, outTok);
-      return { model: m, input: inTok, output: outTok, exact: known, now: now, batch: now / 2 };
+      return { model: m, input: inTok, output: outTok, exact: known, now: dollars(m, inTok, outTok) };
     });
   }
 
   /* 실제 사용량 → 달러. 거절돼 다른 모델이 이어 쓴 경우 usage.iterations 에 시도마다 나온다. */
-  function costOf(usage, modelId, batch) {
+  function costOf(usage, modelId) {
     if (!usage) return null;
     var parts = (usage.iterations && usage.iterations.length) ? usage.iterations : [usage];
     var total = 0;
@@ -3864,7 +3820,7 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
                   (u.cache_read_input_tokens || 0) * 0.1;
       total += (inTok * pr[0] + (u.output_tokens || 0) * pr[1]) / 1e6;
     });
-    return batch ? total / 2 : total;
+    return total;
   }
 
   function usageTotals(usage) {
@@ -3941,35 +3897,8 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
       stopDetails: msg.stop_details || null,
       usage: msg.usage,
       model: msg.model || m.id,
-      cost: costOf(msg.usage, msg.model || m.id, false)
+      cost: costOf(msg.usage, msg.model || m.id)
     };
-  }
-
-  var BATCH_ID = 'notes';
-
-  /* 모아서 한 번에 — Batch API 는 거절 대비 설정(fallbacks)을 받지 않는다. */
-  async function submitBatch(opts) {
-    var params = requestParams(opts.model, opts.effort, opts.transcript);
-    return await client(opts.key).messages.batches.create({
-      requests: [{ custom_id: BATCH_ID, params: params }]
-    });
-  }
-
-  async function checkBatch(key, id) {
-    return await client(key).messages.batches.retrieve(id);
-  }
-
-  async function cancelBatch(key, id) {
-    return await client(key).messages.batches.cancel(id);
-  }
-
-  /* 끝난 Batch 의 결과 한 건 → {type, message, error} */
-  async function batchResult(key, id) {
-    var results = await client(key).messages.batches.results(id);
-    for await (var r of results) {
-      if (r.custom_id === BATCH_ID) return r.result;
-    }
-    return null;
   }
 
   async function countTokens(key, modelId, transcript) {
@@ -4041,15 +3970,16 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
    * ------------------------------------------------------------------ */
   var HL = 'FFF1B0';                       // 옅은 노랑 형광
   var HEAD = '1D4E9E';                     // 제목 — 짙은 파랑
-  var ST = {
-    bold: { b: true },
-    mark: { b: true, hl: HL },
-    head: { b: true, color: HEAD },
-    headMark: { b: true, color: HEAD, hl: HL },
-    th: { b: true },
-    thMark: { b: true, hl: HL },
-    unclear: { color: '8A8F98' }
-  };
+  var EXAM = 'D32F2F';                     // 시험에 낸다고 한 곳 — 빨강
+  var SKIP = 'A3A8AF';                     // 시험에 안 낸다고 한 곳 — 연한 회색
+  var UNCLEAR = { color: '8A8F98' };
+
+  /* 서식 객체는 같은 모양이면 같은 객체를 쓴다 — 조판이 객체로 같은 서식을 묶는다 */
+  var styles = Object.create(null);
+  function style(b, hl, color) {
+    var k = (b ? 1 : 0) + '|' + (hl || '') + '|' + (color || '');
+    return styles[k] || (styles[k] = { b: !!b, hl: hl || null, color: color || null });
+  }
 
   // 쪽 표시를 굵게·코드로 감싸 써도 알아본다 — 놓치면 그 쪽 글이 앞 쪽에 붙는다
   var RE_PAGE = /^[\s#*`_>]*<{2,3}\s*PAGE\s+(\d{1,4})\s*>{2,3}[\s*`_]*$/i;
@@ -4057,15 +3987,18 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
   var RE_UNCLEAR = /(\[\s*(?:unclear in transcript|전사\s*불명확|불명확)[^\]]*\])/i;
   var MARKERS = ['•', '◦', '▪'];      // • ◦ ▪ — 목록 깊이마다
 
-  function styleFor(base, bold, mark) {
-    if (base === 'head') return mark ? ST.headMark : ST.head;
-    if (base === 'th') return mark ? ST.thMark : ST.th;
-    return mark ? ST.mark : bold ? ST.bold : null;
+  /* base: 'body' | 'head' | 'th',  tone: null | 'exam'(빨강·굵게) | 'skip'(연한 회색) */
+  function styleFor(base, bold, mark, tone) {
+    if (base === 'body' && !bold && !mark && !tone) return null;
+    var color = tone === 'exam' ? EXAM : tone === 'skip' ? SKIP : base === 'head' ? HEAD : null;
+    return style(base !== 'body' || bold || mark || tone === 'exam', mark ? HL : null, color);
   }
 
-  /* ==강조== 와 **굵게**. 마크다운처럼 표시 바로 안쪽이 공백이면 강조로 보지 않는다
-     ("x == y" 같은 식을 강조로 오인하지 않게). 짝이 없는 표시는 글자 그대로 둔다. */
-  var RE_EMPH = /\*\*([^*\s](?:[^*]*[^*\s])?)\*\*|==([^=\s](?:[^=]*[^=\s])?)==/g;
+  /* <exam>…</exam>, <noexam>…</noexam>, ==강조==, **굵게**.
+     마크다운처럼 표시 바로 안쪽이 공백이면 강조로 보지 않는다 ("x == y" 같은 식을
+     강조로 오인하지 않게). 짝이 없는 표시는 글자 그대로 두고, 짝 없는 태그는 지운다. */
+  var RE_EMPH = /<(exam|noexam)>([\s\S]*?)<\/\1>|\*\*([^*\s](?:[^*]*[^*\s])?)\*\*|==([^=\s](?:[^=]*[^=\s])?)==/gi;
+  var RE_STRAY_TAG = /<\/?(?:exam|noexam)>/gi;
 
   /* 한 줄 안의 강조 표시를 서식 조각으로 바꾼다 */
   function inline(text, base) {
@@ -4076,25 +4009,27 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
       if (last && last.st === st) last.t += t;
       else runs.push({ t: t, st: st });
     }
-    function plain(t, bold, mark) {
+    function plain(t, bold, mark, tone) {
+      t = t.replace(RE_STRAY_TAG, '');
       if (!t) return;
-      var st = styleFor(base, bold, mark);
+      var st = styleFor(base, bold, mark, tone);
       t.split(RE_UNCLEAR).forEach(function (piece, k) {
-        push(piece, (k % 2 === 1 && base === 'body' && !mark) ? ST.unclear : st);
+        push(piece, (k % 2 === 1 && base === 'body' && !mark && !tone) ? UNCLEAR : st);
       });
     }
-    function walk(s, bold, mark) {
-      var re = new RegExp(RE_EMPH.source, 'g');
+    function walk(s, bold, mark, tone) {
+      var re = new RegExp(RE_EMPH.source, 'gi');
       var last = 0, m;
       while ((m = re.exec(s)) !== null) {
-        plain(s.slice(last, m.index), bold, mark);
-        if (m[1] !== undefined) walk(m[1], true, mark);
-        else walk(m[2], bold, true);
+        plain(s.slice(last, m.index), bold, mark, tone);
+        if (m[1] !== undefined) walk(m[2], bold, mark, m[1].toLowerCase() === 'exam' ? 'exam' : 'skip');
+        else if (m[3] !== undefined) walk(m[3], true, mark, tone);
+        else walk(m[4], bold, true, tone);
         last = re.lastIndex;
       }
-      plain(s.slice(last), bold, mark);
+      plain(s.slice(last), bold, mark, tone);
     }
-    walk(text.replace(/`([^`]*)`/g, '$1'), false, false);
+    walk(text.replace(/`([^`]*)`/g, '$1'), false, false, null);
     return runs;
   }
 
@@ -4225,7 +4160,9 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     return runs.map(function (r) {
       var t = esc(r.t);
       if (!r.st) return t;
-      var cls = r.st === ST.unclear ? 'uc' : r.st.hl ? 'mk' : r.st.b ? 'b' : '';
+      var cls = [r.st.hl ? 'mk' : r.st.b ? 'b' : '',
+                 r.st.color === EXAM ? 'ex' : r.st.color === SKIP ? 'sk' : r.st === UNCLEAR ? 'uc' : '']
+                .filter(Boolean).join(' ');
       return cls ? '<span class="' + cls + '">' + t + '</span>' : t;
     }).join('');
   }
@@ -4263,13 +4200,12 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
   }
 
   /* ------------------------------------------------------------------ *
-   * 이 브라우저에 남기는 것 — 정리본과 맡긴 작업
+   * 이 브라우저에 남기는 것 — 정리본
    *
    * 정리본은 돈을 내고 받은 것이라 다시 부르지 않도록 남겨 둔다. 같은 전사본을
    * 다시 넣으면 그대로 다시 쓴다. 저장이 막힌 환경(file:// 일부)에서는 조용히 넘어간다.
    * ------------------------------------------------------------------ */
   var RESULTS_KEY = 'lecnote.ai.results';
-  var JOBS_KEY = 'lecnote.ai.jobs';
   var MAX_RESULTS = 12;
 
   function readJson(k, dflt) {
@@ -4279,7 +4215,7 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 
   function loadResults() { return readJson(RESULTS_KEY, []); }
 
-  /* entry: {input, pages, model, created, raw, stop, usage, cost, batch, label} */
+  /* entry: {input, pages, model, created, raw, stop, usage, cost, label} */
   function saveResult(entry) {
     var list = loadResults().filter(function (e) {
       return !(e.input === entry.input && e.model === entry.model);
@@ -4301,12 +4237,6 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     return null;
   }
 
-  function loadJobs() { return readJson(JOBS_KEY, []); }
-
-  function saveJobs(jobs) {
-    try { localStorage.setItem(JOBS_KEY, JSON.stringify(jobs)); } catch (e) { /* 저장이 막혀 있다 */ }
-  }
-
   /* ------------------------------------------------------------------ *
    * 사용한 돈 — 이 페이지에서 부른 요청의 비용을 키별로 적어 둔다
    *
@@ -4323,11 +4253,9 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 
   function loadLedger() { return readJson(LEDGER_KEY, []); }
 
-  /* entry: {kid, tail, t, label, model, mode:'now'|'batch', input, output, cost, est, note, ref} */
+  /* entry: {kid, tail, t, label, model, input, output, cost, est, note} */
   function recordSpend(entry) {
     var list = loadLedger();
-    // 같은 Batch 결과를 다시 받아도 두 번 적지 않는다
-    if (entry.ref && list.some(function (e) { return e.ref === entry.ref; })) return false;
     list.push(entry);
     try { localStorage.setItem(LEDGER_KEY, JSON.stringify(list.slice(-MAX_LEDGER))); return true; }
     catch (e) { return false; }
@@ -4372,10 +4300,6 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     usageTotals: usageTotals,
     roughTokens: roughTokens,
     runNow: runNow,
-    submitBatch: submitBatch,
-    checkBatch: checkBatch,
-    cancelBatch: cancelBatch,
-    batchResult: batchResult,
     countTokens: countTokens,
     checkKey: checkKey,
     textOf: textOf,
@@ -4385,8 +4309,6 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     notesHtml: notesHtml,
     saveResult: saveResult,
     findResult: findResult,
-    loadJobs: loadJobs,
-    saveJobs: saveJobs,
     keyId: keyId,
     recordSpend: recordSpend,
     spending: spending,
@@ -4474,10 +4396,7 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
       live: null,      // 진행 중 받은 글
       message: null,   // {kind, html}
       exact: {},       // 전사본 key → {모델 id: 정확한 입력 토큰}
-      jobs: [],        // 모아서 맡긴 정리 (Batch)
       counting: false,
-      submitting: false,
-      checking: false,
       keyFor: null,    // keyState 가 가리키는 키 — 키를 고치면 다시 확인한다
       keyState: null,  // 'checking' | 'ok' | 'bad' | 'unknown'
       keyMsg: ''
@@ -5058,14 +4977,13 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
    * AI 정리
    *
    * 전사본 글자만 Claude API 로 보내 필기처럼 정리한 뒤, 쪽마다 오른쪽 칸에 넣는다.
-   *   바로 보기      스트리밍으로 받으며 화면에 바로 보여 준다 (정가)
-   *   모아서 한 번에  Batch API 에 맡기고 나중에 결과를 가져온다 (반값, 보통 1시간 안)
+   * 스트리밍으로 받으며 화면에 바로 보여 준다. (Batch API 는 브라우저에서 부를 수 없다 —
+   * Anthropic 이 그 경로에 CORS 를 허용하지 않는다.)
    * 받은 정리본은 이 브라우저에 남겨 같은 전사본이면 다시 부르지 않는다.
    * ------------------------------------------------------------------ */
   var AI = window.NoteAI;
   var AI_PREFS = 'lecnote.ai.prefs';
   var AI_KEY = 'lecnote.ai.key';
-  var pollTimer = null;
   var liveTimer = null;
 
   function fmtUsd(x) {
@@ -5126,7 +5044,6 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     state.ai.keyState = result;
     state.ai.keyMsg = msg;
     renderAi();
-    if (result === 'ok') aiCheckJobs(false);
   }
 
   function renderKeyState() {
@@ -5142,15 +5059,10 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
       : '';
   }
 
-  function aiMode() {
-    var el = document.querySelector('input[name="aiMode"]:checked');
-    return el ? el.value : 'now';
-  }
-
   function saveAiPrefs() {
     try {
       localStorage.setItem(AI_PREFS, JSON.stringify({
-        on: state.ai.on, model: state.ai.model, mode: aiMode(), effort: $('aiEffort').value
+        on: state.ai.on, model: state.ai.model, effort: $('aiEffort').value
       }));
     } catch (e) { /* 저장이 막혀 있다 */ }
   }
@@ -5169,13 +5081,10 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     state.ai.on = !!p.on;
     $('aiOn').checked = state.ai.on;
     state.ai.model = AI.model(p.model) ? p.model : AI.DEFAULT_MODEL;
-    var mode = document.querySelector('input[name="aiMode"][value="' + (p.mode === 'batch' ? 'batch' : 'now') + '"]');
-    if (mode) mode.checked = true;
     if (['low', 'medium', 'high'].indexOf(p.effort) >= 0) $('aiEffort').value = p.effort;
     var key = null;
     try { key = localStorage.getItem(AI_KEY); } catch (e) { key = null; }
     if (key) { $('aiKey').value = key; $('aiRemember').checked = true; }
-    state.ai.jobs = AI.loadJobs();
   }
 
   function useEntry(entry) {
@@ -5229,13 +5138,11 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 
     var t = state.transcript;
     var rows = aiEstimates();
-    var mode = aiMode();
     var box = $('aiModels');
-    box.className = 'ai-models mode-' + mode;
     box.innerHTML =
       '<div class="ai-model head"><span></span><span>모델</span><span class="tok">' +
       (rows ? '예상 토큰' : '100만 토큰당 값 (입력 / 출력)') + '</span>' +
-      '<span class="usd now">바로 보기</span><span class="usd batch">모아서 (반값)</span></div>' +
+      '<span class="usd">예상 비용</span></div>' +
       AI.MODELS.map(function (m, i) {
         var r = rows && rows[i];
         var sel = m.id === state.ai.model;
@@ -5247,8 +5154,7 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
           '<input type="radio" name="aiModel" value="' + m.id + '"' + (sel ? ' checked' : '') + '>' +
           '<span class="who"><b>' + esc(m.name) + '</b><i>' + esc(m.note) + '</i></span>' +
           '<span class="tok">' + tok + '</span>' +
-          '<span class="usd now">' + (r ? fmtUsd(r.now) : '—') + '</span>' +
-          '<span class="usd batch">' + (r ? fmtUsd(r.batch) : '—') + '</span></label>';
+          '<span class="usd">' + (r ? fmtUsd(r.now) : '—') + '</span></label>';
       }).join('');
     $('aiModelsNote').textContent = rows
       ? '예상 비용은 글자 수로 어림한 값이라 ±30% 틀릴 수 있습니다. 출력에는 모델이 생각하는 데 쓰는 토큰도 들어갑니다. ' +
@@ -5260,10 +5166,8 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     var again = state.ai.result && t && state.ai.result.entry.input === t.key &&
                 (state.ai.result.entry.asked || state.ai.result.entry.model) === state.ai.model;
     var run = $('btnAiRun');
-    run.disabled = !(t && usable && !state.ai.busy && !state.ai.submitting);
-    run.textContent = (mode === 'batch' ? (state.ai.submitting ? '맡기는 중…' : '모아서 맡기기')
-                                        : (again ? '다시 정리하기' : 'AI로 정리하기')) +
-                      (sel ? ' · 약 ' + fmtUsd(mode === 'batch' ? sel.batch : sel.now) : '');
+    run.disabled = !(t && usable && !state.ai.busy);
+    run.textContent = (again ? '다시 정리하기' : 'AI로 정리하기') + (sel ? ' · 약 ' + fmtUsd(sel.now) : '');
     $('btnAiStop').hidden = !state.ai.busy;
     var count = $('btnAiCount');
     count.disabled = !(t && usable && !state.ai.busy && !state.ai.counting);
@@ -5272,7 +5176,6 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     renderKeyState();
     if (!state.ai.busy) renderAiStatus();
     renderSpend();
-    renderJobs();
     renderAiPreview();
   }
 
@@ -5281,12 +5184,12 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
    * ------------------------------------------------------------------ */
   var CONSOLE = 'https://platform.claude.com';
 
-  /* 이번 요청을 장부에 적는다. u: {input, output, cost, est, note, mode, ref, kid, tail, model, label} */
+  /* 이번 요청을 장부에 적는다. u: {input, output, cost, est, note, kid, tail, model, label} */
   function recordSpend(u) {
     if (!u.kid || u.cost === null || u.cost === undefined) return;
     AI.recordSpend({ kid: u.kid, tail: u.tail, t: Date.now(), label: u.label, model: u.model,
-                     mode: u.mode, input: u.input || 0, output: u.output || 0, cost: u.cost,
-                     est: !!u.est, note: u.note || '', ref: u.ref || null });
+                     input: u.input || 0, output: u.output || 0, cost: u.cost,
+                     est: !!u.est, note: u.note || '' });
   }
 
   function statHtml(k, v) {
@@ -5328,10 +5231,10 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     if (s.entries.length) {
       html += '<details class="ai-history"' + (box.historyOpen ? ' open' : '') + '><summary>사용 내역 ' +
         s.entries.length + '건</summary><table><thead><tr><th>언제</th><th>전사본</th><th>모델</th>' +
-        '<th>방식</th><th class="num">입력 / 출력 토큰</th><th class="num">비용</th></tr></thead><tbody>' +
+        '<th>비고</th><th class="num">입력 / 출력 토큰</th><th class="num">비용</th></tr></thead><tbody>' +
         s.entries.slice().reverse().map(function (e) {
           return '<tr><td>' + fmtDate(e.t) + '</td><td class="lbl"></td><td>' + esc(modelName(e.model)) + '</td>' +
-            '<td>' + (e.mode === 'batch' ? '모아서' : '바로') + (e.note ? ' · ' + esc(e.note) : '') + '</td>' +
+            '<td>' + esc(e.note || '') + '</td>' +
             '<td class="num">' + (e.input || 0).toLocaleString() + ' / ' + (e.output || 0).toLocaleString() + '</td>' +
             '<td class="num">' + fmtUsd(e.cost) + (e.est ? ' (추정)' : '') + '</td></tr>';
         }).join('') + '</tbody></table></details>';
@@ -5381,7 +5284,7 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     el.hidden = false;
     el.innerHTML = '지금 넣은 전사본을 정리하면 약 <b>' + fmtUsd(lo.now) + '</b>(' + esc(lo.model.name) + ')부터 <b>' +
       fmtUsd(hi.now) + '</b>(' + esc(hi.model.name) + ')까지 듭니다. ' + esc(def.model.name) + '는 약 <b>' +
-      fmtUsd(def.now) + '</b>, 모아서 맡기면 반값입니다.';
+      fmtUsd(def.now) + '</b>입니다.';
   }
 
   function resultCardHtml() {
@@ -5395,7 +5298,7 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     var asked = e.pages ? new Set(e.pages) : null;
     r.parsed.pages.forEach(function (_, n) { if (!asked || asked.has(n)) pages++; });
     var parts = [who, pages + '쪽', r.parsed.summary ? '전체 요약 포함' : '',
-                 e.batch ? '모아서 정리' : '', e.imported ? '파일에서 불러옴' : ''].filter(Boolean).join(' · ');
+                 e.imported ? '파일에서 불러옴' : ''].filter(Boolean).join(' · ');
     var cost = e.cost !== null && e.cost !== undefined
       ? '실제 비용 ' + fmtUsd(e.cost) + ' (입력 ' + tot.input.toLocaleString() + ' · 출력 ' +
         tot.output.toLocaleString() + ' 토큰) · '
@@ -5480,8 +5383,7 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 
   /* 바로 보기 */
   async function aiRun() {
-    if (state.ai.busy || state.ai.submitting) return;
-    if (aiMode() === 'batch') return aiSubmit();
+    if (state.ai.busy) return;
     var t = state.transcript, key = aiKey();
     var m = AI.model(state.ai.model), effort = $('aiEffort').value;
     if (!t || !keyUsable() || !m) return;
@@ -5512,7 +5414,7 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
       var L = state.ai.live;
       if (L && (L.text || L.phase !== 'wait')) {
         var outTok = Math.round(AI.roughTokens(L.text) * m.tok);
-        recordSpend({ kid: who.kid, tail: who.tail, label: who.label, model: m.id, mode: 'now',
+        recordSpend({ kid: who.kid, tail: who.tail, label: who.label, model: m.id,
                       input: L.input, output: outTok, cost: (L.input * m.input + outTok * m.output) / 1e6,
                       est: true, note: stopped ? '중지' : '끊김' });
       }
@@ -5537,7 +5439,7 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     var parsed = refused ? null : AI.parseNotes(res.text);
     var bad = !refused && !parsed.pages.size;
     var tot = AI.usageTotals(res.usage);
-    recordSpend({ kid: who.kid, tail: who.tail, label: who.label, model: res.model, mode: 'now',
+    recordSpend({ kid: who.kid, tail: who.tail, label: who.label, model: res.model,
                   input: tot.input, output: tot.output, cost: res.cost,
                   note: refused ? '거절' : bad ? '형식 오류' : res.stop === 'max_tokens' ? '잘림' : '' });
     var spent = res.cost !== null ? ' 이번 요청 비용은 약 ' + fmtUsd(res.cost) + '입니다.' : '';
@@ -5551,7 +5453,7 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     }
     var entry = { input: t.key, pages: t.pages, model: res.model, asked: m.id, effort: effort,
                   created: Date.now(), raw: res.text, stop: res.stop, usage: res.usage,
-                  cost: res.cost, batch: false, label: who.label };
+                  cost: res.cost, label: who.label };
     var saved = AI.saveResult(entry);
     if (state.transcript && state.transcript.key === t.key) {
       state.ai.result = { entry: entry, parsed: parsed };
@@ -5560,195 +5462,6 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     if (!saved) {
       state.ai.message = { kind: 'warn', html: '정리본을 이 브라우저에 저장하지 못했습니다. 새로 고치면 사라지니 ' +
                            '<b>정리본 저장(.md)</b>으로 받아 두세요.' };
-    }
-  }
-
-  /* 모아서 한 번에 — Batch 로 맡긴다 */
-  async function aiSubmit() {
-    var t = state.transcript, key = aiKey();
-    var m = AI.model(state.ai.model), effort = $('aiEffort').value;
-    if (!t || !keyUsable() || !m || state.ai.submitting) return;
-    state.ai.submitting = true;
-    state.ai.message = null;
-    renderAi();
-    try {
-      var b = await AI.submitBatch({ key: key, model: m.id, effort: effort, transcript: t.text });
-      state.ai.jobs.unshift({ id: b.id, model: m.id, effort: effort, created: Date.now(), label: notesLabel(),
-                              input: t.key, pages: t.pages, status: b.processing_status,
-                              kid: AI.keyId(key), tail: key.slice(-4) });
-      AI.saveJobs(state.ai.jobs);
-      state.ai.message = { kind: 'ok', html: '<b>맡겼습니다.</b> 보통 1시간 안에 끝납니다(최대 24시간). ' +
-        '창을 닫아도 됩니다 — 다시 열면 이어서 확인하고, 끝나면 아래 목록에서 결과를 쓸 수 있습니다.' };
-      schedulePoll();
-    } catch (e) {
-      state.ai.message = { kind: 'err', html: esc(AI.describeError(e)) };
-    } finally {
-      state.ai.submitting = false;
-      renderAi();
-    }
-  }
-
-  function batchErrorText(r) {
-    if (!r) return '결과를 찾지 못했습니다.';
-    if (r.type === 'expired') return '24시간 안에 끝나지 않아 만료되었습니다.';
-    if (r.type === 'canceled') return '취소되었습니다.';
-    var err = r.error && (r.error.error || r.error);
-    return '요청이 실패했습니다' + (err && err.message ? ': ' + err.message : '.');
-  }
-
-  /* 끝난 작업의 결과를 받아 정리본으로 남긴다 */
-  async function fetchJobEntry(j) {
-    var key = aiKey();
-    var r = await AI.batchResult(key, j.id);
-    if (!r || r.type !== 'succeeded') throw new Error(batchErrorText(r));   // 실패·만료·취소는 청구되지 않는다
-    var msg = r.message;
-    var model = msg.model || j.model;
-    var refused = msg.stop_reason === 'refusal';
-    var text = refused ? '' : AI.textOf(msg);
-    var bad = !refused && !AI.parseNotes(text).pages.size;
-    var tot = AI.usageTotals(msg.usage);
-    var cost = AI.costOf(msg.usage, model, true);
-    recordSpend({ kid: j.kid || AI.keyId(key), tail: j.tail || key.slice(-4), label: j.label, model: model,
-                  mode: 'batch', input: tot.input, output: tot.output, cost: cost, ref: 'batch:' + j.id,
-                  note: refused ? '거절' : bad ? '형식 오류' : msg.stop_reason === 'max_tokens' ? '잘림' : '' });
-    if (refused) throw new Error(AI.describeRefusal(msg.stop_details));
-    if (bad) throw new Error('정리본에서 쪽 표시를 찾지 못했습니다.');
-    var entry = { input: j.input, pages: j.pages, model: model, asked: j.model,
-                  effort: j.effort, created: Date.now(), raw: text, stop: msg.stop_reason,
-                  usage: msg.usage, cost: cost, batch: true, label: j.label };
-    AI.saveResult(entry);
-    j.result = true;
-    j.cost = entry.cost;
-    j.resultModel = entry.model;
-    return entry;
-  }
-
-  async function aiCheckJobs(manual) {
-    var pending = state.ai.jobs.filter(function (j) { return !j.done; });
-    if (!pending.length || state.ai.checking) return;
-    if (state.busy && !manual) return;       // PDF 를 만드는 동안에는 API 를 부르지 않는다
-    var key = aiKey();
-    if (!key) {
-      if (manual) {
-        state.ai.message = { kind: 'warn', html: 'API 키를 넣어야 맡긴 정리의 상태를 확인할 수 있습니다.' };
-        renderAi();
-      }
-      return;
-    }
-    state.ai.checking = true;
-    var activated = false;
-    for (var i = 0; i < pending.length; i++) {
-      var j = pending[i];
-      try {
-        var b = await AI.checkBatch(key, j.id);
-        j.status = b.processing_status;
-        j.lastError = null;
-        if (b.processing_status !== 'ended') continue;
-        j.done = true;
-        try {
-          var entry = await fetchJobEntry(j);
-          // 지금 넣은 전사본의 정리본이고 쓰던 정리본이 없으면 바로 쓴다
-          if (state.ai.on && !state.ai.result && state.transcript && state.transcript.key === entry.input) {
-            state.ai.result = useEntry(entry);
-            state.ai.pinned = false;
-            activated = true;
-          }
-        } catch (e) {
-          // 연결·서버 오류는 다음 확인 때 다시 받는다. 거절·실패·형식 오류만 굳힌다.
-          if (window.AnthropicSDK && e instanceof window.AnthropicSDK.APIError) {
-            j.done = false;
-            j.lastError = AI.describeError(e);
-          } else {
-            j.error = (e && e.message) || String(e);
-          }
-        }
-      } catch (e) {
-        if (e && e.status === 404) { j.done = true; j.error = AI.describeError(e); }
-        else j.lastError = AI.describeError(e);
-      }
-    }
-    state.ai.checking = false;
-    AI.saveJobs(state.ai.jobs);
-    schedulePoll();
-    if (activated) doRecompute();
-    else renderAi();
-  }
-
-  function schedulePoll() {
-    var pending = state.ai.jobs.some(function (j) { return !j.done; });
-    if (pending && !pollTimer) pollTimer = setInterval(function () { aiCheckJobs(false); }, 60000);
-    if (!pending && pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-  }
-
-  function renderJobs() {
-    var jobs = state.ai.jobs;
-    var box = $('aiJobs');
-    if (!jobs.length) { box.innerHTML = ''; return; }
-    var cur = state.ai.on && state.ai.result && state.ai.result.entry;
-    var items = jobs.map(function (j, i) {
-      var st = j.error ? '<span class="st bad">' + esc(j.error) + '</span>'
-             : j.result ? '<span class="st ok">완료' + (j.cost !== undefined && j.cost !== null ? ' · ' + fmtUsd(j.cost) : '') + '</span>'
-             : '<span class="st wait">' + (j.status === 'canceling' ? '취소하는 중' : '처리 중') +
-               (j.lastError ? ' — ' + esc(j.lastError) : '') + '</span>';
-      var using = cur && cur.batch && cur.input === j.input && cur.model === (j.resultModel || j.model);
-      var btns = (j.result ? '<button class="btn btn-pearl" data-act="use" data-i="' + i + '"' +
-                             (using ? ' disabled>쓰는 중' : '>이 결과 쓰기') + '</button>' : '') +
-                 (!j.done ? '<button class="btn-icon" data-act="cancel" data-i="' + i + '" title="맡긴 정리 취소">취소</button>' : '') +
-                 '<button class="btn-icon" data-act="remove" data-i="' + i + '" title="목록에서 빼기">✕</button>';
-      return '<li><span class="nm"></span><span class="meta">' + esc(modelName(j.model)) + ' · ' +
-             fmtDate(j.created) + '</span>' + st + btns + '</li>';
-    });
-    var pending = jobs.some(function (j) { return !j.done; });
-    box.innerHTML =
-      '<div class="ai-jobs-head"><span class="fb-title">모아서 맡긴 정리</span>' +
-      (pending ? '<button class="btn btn-pearl" data-act="check"' + (state.ai.checking ? ' disabled>확인하는 중…' : '>지금 확인') + '</button>' : '') +
-      '</div><ul class="files ai-jobs">' + items.join('') + '</ul>' +
-      (pending ? '<p class="fine">보통 1시간 안에 끝납니다(최대 24시간). 창을 닫아도 되고, 다시 열면 이어서 확인합니다' +
-                 (aiKey() ? '.' : ' — API 키가 있어야 확인할 수 있습니다.') + '</p>' : '');
-    // 파일 이름은 textContent 로 넣는다
-    var names = box.querySelectorAll('.ai-jobs .nm');
-    jobs.forEach(function (j, i) { names[i].textContent = j.label; });
-  }
-
-  async function onJobClick(e) {
-    var btn = e.target.closest('[data-act]');
-    if (!btn || btn.disabled) return;
-    var act = btn.getAttribute('data-act');
-    if (act === 'check') { aiCheckJobs(true); return; }
-    var i = +btn.getAttribute('data-i');
-    var j = state.ai.jobs[i];
-    if (!j) return;
-    if (act === 'remove') {
-      state.ai.jobs.splice(i, 1);
-      AI.saveJobs(state.ai.jobs);
-      schedulePoll();
-      renderAi();
-    } else if (act === 'cancel') {
-      try {
-        var b = await AI.cancelBatch(aiKey(), j.id);
-        j.status = b.processing_status;
-      } catch (err) {
-        state.ai.message = { kind: 'err', html: esc(AI.describeError(err)) };
-      }
-      AI.saveJobs(state.ai.jobs);
-      renderAi();
-    } else if (act === 'use') {
-      try {
-        var entry = AI.findResult(j.input, j.resultModel || j.model);
-        if (!entry || !entry.batch) entry = await fetchJobEntry(j);    // 이 브라우저에서 지워졌으면 다시 받는다
-        state.ai.result = useEntry(entry);
-        state.ai.pinned = !(state.transcript && state.transcript.key === entry.input);
-        state.ai.on = true;
-        $('aiOn').checked = true;
-        state.ai.message = state.deck ? null
-          : { kind: 'ok', html: '정리본을 가져왔습니다. 위에서 <b>강의자료 PDF</b>를 넣으면 PDF를 만들 수 있습니다.' };
-        saveAiPrefs();
-        AI.saveJobs(state.ai.jobs);
-        doRecompute();
-      } catch (err) {
-        state.ai.message = { kind: 'err', html: esc((err && err.message) || String(err)) };
-        renderAi();
-      }
     }
   }
 
@@ -6153,9 +5866,6 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
       if (e.target.classList && e.target.classList.contains('ai-history')) $('aiSpend').historyOpen = e.target.open;
     }, true);
     $('aiEffort').addEventListener('change', function () { saveAiPrefs(); renderAi(); });
-    document.querySelectorAll('input[name="aiMode"]').forEach(function (el) {
-      el.addEventListener('change', function () { saveAiPrefs(); renderAi(); });
-    });
     $('aiModels').addEventListener('change', function (e) {
       if (e.target.name !== 'aiModel') return;
       state.ai.model = e.target.value;
@@ -6165,7 +5875,6 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     $('btnAiRun').addEventListener('click', aiRun);
     $('btnAiStop').addEventListener('click', function () { if (state.ai.stream) state.ai.stream.abort(); });
     $('btnAiCount').addEventListener('click', aiCount);
-    $('aiJobs').addEventListener('click', onJobClick);
     $('aiStatus').addEventListener('click', function (e) {
       if (e.target.id === 'aiSaveMd') { e.preventDefault(); aiSaveMd(); }
       if (e.target.id === 'aiSavePdf') { e.preventDefault(); aiSavePdf(); }
@@ -6175,9 +5884,7 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
     loadAiPrefs();
     renderAi();
     updateSummary();
-    schedulePoll();
-    // 기억해 둔 키가 있으면 확인하고, 창을 닫은 사이 끝난 작업이 있으면 받아 둔다
-    if (aiKey()) checkKeyNow();
+    if (aiKey()) checkKeyNow();      // 기억해 둔 키가 있으면 확인해 둔다
   }
 
   if (document.readyState === 'loading') {
